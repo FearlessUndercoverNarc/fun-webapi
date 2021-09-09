@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Models.Db;
 using Models.Db.Account;
 using Models.Db.Common;
@@ -96,13 +97,25 @@ namespace Infrastructure.Core
             modelBuilder.Entity<Folder>()
                 .HasOne(f => f.AuthorAccount)
                 .WithMany(a => a.AuthoredFolders);
+
+            modelBuilder.Entity<Card>()
+                .HasMany(c => c.AsLeftCards)
+                .WithMany(c => c.AsRightCards)
+                .UsingEntity<CardConnection>(
+                    opt1 => opt1.HasOne(c => c.CardLeft).WithMany(c => c.AsLeftCardConnections),
+                    opt2 => opt2.HasOne(c => c.CardRight).WithMany(c => c.AsRightCardConnections),
+                    rel => rel.HasKey(c => new {c.Id, c.CardLeftId, c.CardRightId}));
         }
 
         public DbSet<FunAccount> FunAccounts { get; set; }
 
-        //public DbSet<Folder> Folders { get; set; }
+        public DbSet<Folder> Folders { get; set; }
 
-        //public DbSet<Desk> Desks { get; set; }
+        public DbSet<Desk> Desks { get; set; }
+
+        public DbSet<Card> Cards { get; set; }
+
+        public DbSet<CardConnection> CardConnections { get; set; }
 
         public DbSet<TokenSession> TokenSessions { get; set; }
     }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using Models.Db.Common;
 
 namespace Models.Db.Tree
@@ -9,5 +10,9 @@ namespace Models.Db.Tree
         public long FolderId { get; set; }
 
         public virtual Folder Folder { get; set; }
+
+        public virtual ICollection<Card> Cards { get; set; }
+
+        public virtual ICollection<CardConnection> CardConnections { get; set; }
     }
 }

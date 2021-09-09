@@ -21,7 +21,7 @@ namespace Models.Db.Tree
         // public virtual ICollection<FolderShare> SharedToRelation { get; set; }
 
         public virtual ICollection<Folder> Children { get; set; }
-        // public virtual ICollection<Desk> Desks { get; set; }
+        public virtual ICollection<Desk> Desks { get; set; }
 
         [ForeignKey(nameof(Parent))]
         public long? ParentId { get; set; }
