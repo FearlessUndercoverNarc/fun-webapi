@@ -19,6 +19,8 @@ namespace Models.Db.Tree
         [MaxLength(2048)]
         public string ExternalUrl { get; set; }
 
+        // Example: #AABBCCDD
+        [MaxLength(9)]
         public string ColorHex { get; set; }
         
         [ForeignKey(nameof(Desk))]

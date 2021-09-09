@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Infrastructure.Core;
 using Microsoft.Extensions.DependencyInjection;
-using Models.DTOs.Misc;
 using Services.SharedServices.Abstractions;
 
 namespace Seeder
@@ -34,7 +32,7 @@ namespace Seeder
 
             Console.WriteLine("Database dropped and recreated");
 
-            await _funAccountService.CreateFunAccount(new() {Login = "Admin", Password = "Admin", Fio = "Admin Adminovich Adminov"});
+            await _funAccountService.CreateFunAccount(new() {Login = "Admin", Password = "e3afed0047b08059d0fada10f400c1e5", Fio = "Admin Adminovich Adminov"});
             await _funAccountService.CreateFunAccount(new() {Login = "Egop", Password = "Egop", Fio = "Egop Egopovich Egopov"});
             Console.WriteLine("Seeded accounts");
         }

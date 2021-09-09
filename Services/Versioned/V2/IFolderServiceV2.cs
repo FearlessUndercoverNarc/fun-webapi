@@ -7,18 +7,20 @@ namespace Services.Versioned.V2
 {
     public interface IFolderServiceV2
     {
-        Task<CreatedDto> CreateV2(CreateFolderDto createFolderDto);
+        Task<CreatedDto> Create(CreateFolderDto createFolderDto);
         
-        Task UpdateV2(UpdateFolderDto updateFolderDto);
+        Task Update(UpdateFolderDto updateFolderDto);
         
-        Task<ICollection<FolderWithIdDto>> GetMyRootV2();
+        Task<ICollection<FolderWithIdDto>> GetMyRoot();
         
-        Task<ICollection<FolderWithIdDto>> GetMyTrashBinV2();
+        Task<ICollection<FolderWithIdDto>> GetMyTrashBin();
         
-        Task<ICollection<FolderWithIdDto>> GetSubfoldersByFolderV2(long folderId);
+        Task<ICollection<FolderWithIdDto>> GetSubfoldersByFolder(long folderId);
 
-        Task MoveToTrashV2(long folderId);
+        Task MoveToFolder(long folderId, long? destinationId);
         
-        Task RestoreFromTrashV2(long folderId);
+        Task MoveToTrash(long folderId);
+        
+        Task RestoreFromTrash(long folderId);
     }
 }

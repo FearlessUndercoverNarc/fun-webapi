@@ -6,6 +6,7 @@ using Models.Db.Tree;
 using Models.DTOs.Folders;
 using Models.DTOs.Misc;
 using Models.Misc;
+using Services.External;
 using Services.SharedServices.Abstractions;
 using Services.Versioned.V1;
 
@@ -24,15 +25,16 @@ namespace Services.Versioned.Implementations
             _requestAccountIdService = requestAccountIdService;
         }
 
-        public async Task<CreatedDto> CreateV1(CreateFolderDto createFolderDto)
+        async Task<CreatedDto> IFolderServiceV1.Create(CreateFolderDto createFolderDto)
         {
             if (createFolderDto.ParentId is { } parentId)
             {
                 var parentFolder = await _folderRepository.GetById(parentId);
-                // parentFolder can't be null, it's checked in DTO
+                // parentFolder can't be null, it's ID is checked in DTO
 
                 if (parentFolder.AuthorAccountId != _requestAccountIdService.Id)
                 {
+                    await TelegramAPI.Send($"IFolderServiceV1.Create:\nAttempt to create folder in restricted location!\nFolderId ({parentId})\nUser ({_requestAccountIdService.Id})");
                     throw new FunException("Вы не можете создавать здесь что-либо, так как не являетесь владельцем");
                 }
             }
@@ -46,29 +48,20 @@ namespace Services.Versioned.Implementations
             return folder.Id;
         }
 
-        public async Task UpdateV1(UpdateFolderDto updateFolderDto)
+        async Task IFolderServiceV1.Update(UpdateFolderDto updateFolderDto)
         {
             var folder = await _folderRepository.GetById(updateFolderDto.Id);
 
             if (folder.AuthorAccountId != _requestAccountIdService.Id)
             {
+                await TelegramAPI.Send($"IFolderServiceV1.Update:\nAttempt to access restricted folder!\nFolderId ({updateFolderDto.Id})\nUser ({_requestAccountIdService.Id})");
                 throw new FunException("Необходимо быть владельцем для внесения изменений!");
             }
 
-            // If we change the parent, we need to check it's availability
-            if (folder.ParentId != updateFolderDto.ParentId)
+            if (folder.IsInTrashBin)
             {
-                if (updateFolderDto.ParentId is { } parentId)
-                {
-                    var parentFolder = await _folderRepository.GetById(parentId);
-                    // parentFolder can't be null, it's checked in DTO
-
-                    if (parentFolder.AuthorAccountId != _requestAccountIdService.Id)
-                    {
-                        throw new FunException("Вы не можете перемещать сюда, так как не являетесь владельцем");
-                    }
-                }
-                // else { we just moved the folder to the very root }
+                await TelegramAPI.Send($"IFolderServiceV1.Update:\nAttempt to access folder in trash bin!\nFolderId ({updateFolderDto.Id})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Нельзя изменять параметры элементов в корзине!\nВосстановите элемент для внесения изменений.");
             }
 
             _mapper.Map(updateFolderDto, folder);
@@ -76,68 +69,126 @@ namespace Services.Versioned.Implementations
             await _folderRepository.Update(folder);
         }
 
-        public async Task<ICollection<FolderWithIdDto>> GetMyRootV1()
+        async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetMyRoot()
         {
             var requestAccountId = _requestAccountIdService.Id;
-            var folders = await _folderRepository.GetMany(f => f.ParentId == null && f.AuthorAccountId == requestAccountId);
+            var folders = await _folderRepository.GetMany(
+                f => f.ParentId == null && f.AuthorAccountId == requestAccountId && !f.IsInTrashBin
+            );
 
             var folderWithIdDtos = _mapper.Map<ICollection<FolderWithIdDto>>(folders);
 
             return folderWithIdDtos;
         }
 
-        public async Task<ICollection<FolderWithIdDto>> GetSubfoldersByFolderV1(long folderId)
+        async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetSubfoldersByFolder(long id)
         {
-            // TODO: Ensure availability to user
-            
-            var folders = await _folderRepository.GetMany(f => f.ParentId == folderId);
+            var parentFolder = await _folderRepository.GetById(id);
+
+            if (parentFolder.AuthorAccountId != _requestAccountIdService.Id)
+            {
+                await TelegramAPI.Send($"IFolderServiceV1.GetSubfoldersByFolder:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("У вас нет доступа к этой папке");
+            }
+
+            // TODO: Support shared folders
+
+            var folders = await _folderRepository.GetMany(f => f.ParentId == id && !f.IsInTrashBin);
 
             var folderWithIdDtos = _mapper.Map<ICollection<FolderWithIdDto>>(folders);
 
             return folderWithIdDtos;
         }
 
-        public async Task MoveToTrashV1(long folderId)
+        async Task IFolderServiceV1.MoveToTrashBin(long id)
         {
-            // TODO: Ensure availability to user
-            
-            var folder = await _folderRepository.GetById(folderId);
+            var folder = await _folderRepository.GetById(id);
 
+            // TODO: Support shared folders
             if (folder.AuthorAccountId != _requestAccountIdService.Id)
             {
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToTrashBin:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
                 throw new FunException("Необходимо быть владельцем для удаления элемента!");
             }
 
+            if (folder.IsInTrashBin)
+            {
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToTrashBin:\nAttempt to access folder in trash bin!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Этот элемент уже в корзине");
+            }
+
             folder.IsInTrashBin = true;
-            
+
             await _folderRepository.Update(folder);
         }
 
-        public async Task<ICollection<FolderWithIdDto>> GetMyTrashBinV1()
+        async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetMyTrashBin()
         {
             var requestAccountId = _requestAccountIdService.Id;
             var folders = await _folderRepository.GetMany(f => f.AuthorAccountId == requestAccountId && f.IsInTrashBin);
-            
+
             var folderWithIdDtos = _mapper.Map<ICollection<FolderWithIdDto>>(folders);
 
             return folderWithIdDtos;
         }
 
-        public async Task RestoreFromTrashV1(long folderId)
+        async Task IFolderServiceV1.RestoreFromTrashBin(long folderId)
         {
             var folder = await _folderRepository.GetById(folderId);
-            
+
             if (folder.AuthorAccountId != _requestAccountIdService.Id)
             {
+                await TelegramAPI.Send($"IFolderServiceV1.RestoreFromTrashBin:\nAttempt to access restricted folder!\nFolderId ({folderId})\nUser ({_requestAccountIdService.Id})");
                 throw new FunException("У вас нет доступа к восстановлению этого элемента!");
             }
 
             if (!folder.IsInTrashBin)
             {
+                await TelegramAPI.Send($"IFolderServiceV1.RestoreFromTrashBin:\nAttempt to access folder not in trash bin!\nFolderId ({folderId})\nUser ({_requestAccountIdService.Id})");
                 throw new FunException("Элемент не в корзине");
             }
 
             folder.IsInTrashBin = false;
+
+            await _folderRepository.Update(folder);
+        }
+
+        async Task IFolderServiceV1.MoveToFolder(long folderId, long? destinationId)
+        {
+            var folder = await _folderRepository.GetById(folderId);
+
+            if (folder.AuthorAccountId != _requestAccountIdService.Id)
+            {
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to access restricted folder!\nFolderId ({folderId}) -> ({destinationId})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Вы не можете перемещать этот элемент");
+            }
+
+            if (folder.IsInTrashBin)
+            {
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to move folder in trash bin!\nFolderId ({folderId}) -> ({destinationId})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Перемещение элементов в корзине запрещено");
+            }
+
+            if (folderId == destinationId)
+            {
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to move folder into itself!\nFolderId ({folderId}) -> ({destinationId})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Вы пытаетесь переместить элемент внутрь себя");
+            }
+
+            // If we aren't moving into root, ensure that destination is available
+            if (destinationId is not null)
+            {
+                var destinationFolder = await _folderRepository.GetById(destinationId.Value);
+
+                // TODO: Support shared folders
+                if (destinationFolder.AuthorAccountId != _requestAccountIdService.Id)
+                {
+                    await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to move folder into restricted folder!\nFolderId ({folderId}) -> ({destinationId})\nUser ({_requestAccountIdService.Id})");
+                    throw new FunException("Вы не можете перемещать в эту папку, так как не являетесь её владельцем");
+                }
+            }
+
+            folder.ParentId = destinationId;
 
             await _folderRepository.Update(folder);
         }

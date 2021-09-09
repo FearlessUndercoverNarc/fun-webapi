@@ -21,6 +21,8 @@ namespace Models.Db.Account
         public bool HasSubscription { get; set; }
 
         public virtual ICollection<Folder> AuthoredFolders { get; set; }
+        
+        public virtual ICollection<Desk> AuthoredDesks { get; set; }
 
         // public virtual ICollection<Folder> SharedFolders { get; set; }
         //

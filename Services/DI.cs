@@ -46,6 +46,7 @@ namespace Services
             services.AddScoped<ITokenSessionRepository, TokenSessionRepository>();
             services.AddScoped<IFunAccountRepository, FunAccountRepository>();
             services.AddScoped<IFolderRepository, FolderRepository>();
+            services.AddScoped<IDeskRepository, DeskRepository>();
 
             return services;
         }
