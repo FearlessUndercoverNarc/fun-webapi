@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using FunAPI.Filters;
 using Microsoft.AspNetCore.Mvc;
@@ -17,39 +18,116 @@ namespace FunAPI.Areas.V2.Controllers
     [ApiVersion("2.0")]
     public class FolderController : Controller
     {
-        private IFolderServiceV2 _folderServiceV2;
+        private IFolderServiceV2 _folderService;
 
-        public FolderController(IFolderServiceV2 folderServiceV2)
+        public FolderController(IFolderServiceV2 folderService)
         {
-            _folderServiceV2 = folderServiceV2;
+            _folderService = folderService;
+        }
+
+
+        [HttpPost]
+        [MapToApiVersion("2.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<CreatedDto>> Create(
+            [FromBody] CreateFolderDto createFolderDto
+        )
+        {
+            var createdDto = await _folderService.Create(createFolderDto);
+
+            return Ok(createdDto);
         }
 
         [HttpPost]
         [MapToApiVersion("2.0")]
-        public async Task<ActionResult<CreatedDto>> Create([FromBody] CreateFolderDto createFolderDto)
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult> Update(
+            [FromBody] UpdateFolderDto updateFolderDto
+        )
         {
-            return Ok("Not implemented v2");
-        }
-
-        [HttpPost]
-        [MapToApiVersion("2.0")]
-        public async Task<ActionResult> Update([FromBody] UpdateFolderDto updateFolderDto)
-        {
-            return Ok("Not implemented v2");
+            await _folderService.Update(updateFolderDto);
+            return Ok();
         }
 
         [HttpGet]
         [MapToApiVersion("2.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult<ICollection<FolderWithIdDto>>> GetMyRoot()
         {
-            return Ok("Not implemented v2");
+            var folderWithIdDtos = await _folderService.GetMyRoot();
+
+            return Ok(folderWithIdDtos);
+        }
+
+        [HttpGet]
+        [MapToApiVersion("1.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<ICollection<FolderWithIdDto>>> GetMyTrashBin()
+        {
+            var folderWithIdDtos = await _folderService.GetMyTrashBin();
+
+            return Ok(folderWithIdDtos);
+        }
+
+        [HttpDelete]
+        [MapToApiVersion("2.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult> MoveToTrashBin(
+            [Required] [Id(typeof(Folder))] long id
+        )
+        {
+            await _folderService.MoveToTrashBin(id);
+
+            return Ok();
         }
 
         [HttpGet]
         [MapToApiVersion("2.0")]
-        public async Task<ActionResult<ICollection<FolderWithIdDto>>> GetSubfoldersByFolder([Id(typeof(Folder))] long id)
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult> RestoreFromTrashBin(
+            [Required] [Id(typeof(Folder))] long id
+        )
         {
-            return Ok("Not implemented v2");
+            await _folderService.RestoreFromTrashBin(id);
+
+            return Ok();
+        }
+        
+        [HttpDelete]
+        [MapToApiVersion("2.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult> RemoveFromTrashBin(
+            [Required] [Id(typeof(Folder))] long id
+        )
+        {
+            await _folderService.RemoveFromTrashBin(id);
+
+            return Ok();
+        }
+
+        [HttpGet]
+        [MapToApiVersion("2.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<ICollection<FolderWithIdDto>>> GetSubfoldersByFolder(
+            [Required] [Id(typeof(Folder))] long id
+        )
+        {
+            var folderWithIdDtos = await _folderService.GetSubfoldersByFolder(id);
+
+            return Ok(folderWithIdDtos);
+        }
+
+        [HttpGet]
+        [MapToApiVersion("2.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult> MoveToFolder(
+            [Required] [Id(typeof(Folder))] long id,
+            [Id(typeof(Folder))] long? destinationId
+        )
+        {
+            await _folderService.MoveToFolder(id, destinationId);
+
+            return Ok();
         }
     }
 }

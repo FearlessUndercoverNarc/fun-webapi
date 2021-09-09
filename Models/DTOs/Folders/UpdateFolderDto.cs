@@ -13,8 +13,5 @@ namespace Models.DTOs.Folders
         [Required]
         [String(1, 256)]
         public string Title { get; set; }
-
-        [Id(typeof(Folder))]
-        public long? ParentId { get; set; }
     }
 }

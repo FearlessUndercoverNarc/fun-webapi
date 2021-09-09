@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Models.Db.Account;
 using Models.Db.Common;
-using Models.Db.Relations;
 
 namespace Models.Db.Tree
 {
@@ -17,11 +17,15 @@ namespace Models.Db.Tree
 
         public virtual FunAccount AuthorAccount { get; set; }
 
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime LastUpdatedAt { get; set; }
+
         // public virtual ICollection<FunAccount> SharedTo { get; set; }
         // public virtual ICollection<FolderShare> SharedToRelation { get; set; }
 
         public virtual ICollection<Folder> Children { get; set; }
-        // public virtual ICollection<Desk> Desks { get; set; }
+        public virtual ICollection<Desk> Desks { get; set; }
 
         [ForeignKey(nameof(Parent))]
         public long? ParentId { get; set; }

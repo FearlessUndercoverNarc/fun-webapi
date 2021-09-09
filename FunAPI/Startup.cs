@@ -6,9 +6,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using FunAPI.Middlewares;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch.Operations;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.Mvc.Versioning.Conventions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +21,7 @@ using Models.Misc;
 using Newtonsoft.Json;
 using Services;
 using Services.External;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace FunAPI
 {
@@ -64,23 +64,24 @@ namespace FunAPI
                         // options.SerializerSettings.Converters.Add(new StringEnumConverter());
                     }
                 );
-            
+
             services
                 .AddFunDependencies();
-            
+
             WWWRootPath = Path.GetFullPath("../fun.io", _env.ContentRootPath);
             _env.WebRootPath = WWWRootPath;
             _env.WebRootFileProvider = new PhysicalFileProvider(WWWRootPath);
-            
+
             services.AddSingleton(_ => new WWWRootPathHolder(WWWRootPath));
-            
+
             // In production, the Angular files will be served from this directory
             services.AddSpaStaticFiles(options => { options.RootPath = WWWRootPath; });
-            
+
             services
                 .AddSwaggerGen(swagger =>
                 {
                     swagger.SwaggerDoc("v1", new OpenApiInfo() {Title = "FUN API Docs V1", Version = "1"});
+                    swagger.SwaggerDoc("v2", new OpenApiInfo() {Title = "FUN API Docs V2", Version = "2"});
                     swagger.AddSecurityDefinition("basic", new OpenApiSecurityScheme()
                     {
                         In = ParameterLocation.Header,
@@ -88,6 +89,26 @@ namespace FunAPI
                         Name = "auth-token",
                         Type = SecuritySchemeType.ApiKey
                     });
+
+                    // This call remove version from parameter, without it we will have version as parameter 
+                    // for all endpoints in swagger UI
+                    swagger.OperationFilter<RemoveVersionFromParameter>();
+
+                    // This make replacement of v{version:apiVersion} to real version of corresponding swagger doc.
+                    swagger.DocumentFilter<ReplaceVersionWithExactValueInPath>();
+
+                    // This on used to exclude endpoint mapped to not specified in swagger version.
+                    // In this particular example we exclude 'GET /api/v2/Values/otherget/three' endpoint,
+                    // because it was mapped to v3 with attribute: MapToApiVersion("3")
+                    // swagger.DocInclusionPredicate((version, desc) =>
+                    // {
+                    //     var maps = desc.Action()
+                    //         .OfType<MapToApiVersionAttribute>()
+                    //         .SelectMany(attr => attr.Versions)
+                    //         .ToArray();
+                    //
+                    //     return versions.Any(v => $"v{v.ToString()}" == version) && (maps.Length == 0 || maps.Any(v => $"v{v.ToString()}" == version));
+                    // });
                 });
 
             services.AddApiVersioning(options =>
@@ -96,19 +117,35 @@ namespace FunAPI
                 options.DefaultApiVersion = new ApiVersion(1, 0); // Equals to ApiVersion.Default
                 options.ReportApiVersions = true;
                 // automatically applies an api version based on the name of the defining controller's namespace
-                options.Conventions.Add( new VersionByNamespaceConvention() );
+                options.Conventions.Add(new VersionByNamespaceConvention());
             });
-            
+
             var telegramConfig = Configuration.GetSection(nameof(TelegramConfig)).Get<TelegramConfig>();
 
             TelegramAPI.Configure(telegramConfig, _env.EnvironmentName);
+        }
+
+        public class RemoveVersionFromParameter : IOperationFilter
+        {
+            public void Apply(OpenApiOperation operation, OperationFilterContext context)
+            {
+                var versionParameter = operation.Parameters.Single(p => p.Name == "version");
+                operation.Parameters.Remove(versionParameter);
+            }
+        }
+
+        public class ReplaceVersionWithExactValueInPath : IDocumentFilter
+        {
+            public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
+            {
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory.CreateLogger<Startup>();
-            
+
             if (!_env.IsProduction())
             {
                 app.UseDeveloperExceptionPage();
@@ -116,36 +153,37 @@ namespace FunAPI
 
             app.UseMiddleware<ExceptionCatcherMiddleware>();
             app.UseMiddleware<RequestCounterMiddleware>();
-            
+
             if (!_env.IsProduction())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI(c =>
                 {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "FUN API Docs");
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "FUN API Docs V1");
+                    c.SwaggerEndpoint("/swagger/v2/swagger.json", "FUN API Docs V2");
                     c.RoutePrefix = "docs";
                 });
             }
-            
+
             // app.UseHttpsRedirection();
 
             app.UseDefaultFiles(); // Serve index.html for route "/"
-            
+
             var staticFileOptions = new StaticFileOptions
             {
                 FileProvider = _env.WebRootFileProvider,
                 ServeUnknownFileTypes = true
             };
-            
+
             app.UseStaticFiles(staticFileOptions);
-            
+
             if (!_env.IsDevelopment())
             {
                 app.UseSpaStaticFiles(staticFileOptions);
             }
 
             app.UseRouting();
-            
+
             app.UseCors(builder => builder
                 .WithOrigins(
                     "http://localhost",
@@ -163,7 +201,7 @@ namespace FunAPI
             );
 
             app.UseAuthentication();
-            
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapAreaControllerRoute(
@@ -180,7 +218,7 @@ namespace FunAPI
                     pattern: "v2/{controller}/{action}");
 
                 endpoints.MapControllers();
-                
+
                 endpoints.MapFallback(FallbackDelegate);
             });
 

@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using Models.DTOs.Desks;
 
-namespace Models.DTOs.Folders
+namespace Models.DTOs.Desks
 {
-    public class FolderWithIdDto
+    public class DeskWithIdDto
     {
         public string Title { get; set; }
+
+        public string Description { get; set; }
 
         public DateTime CreatedAt { get; set; }
 
@@ -14,8 +14,10 @@ namespace Models.DTOs.Folders
 
         public long AuthorAccountId { get; set; }
 
+        public string AuthorAccountFio { get; set; }
+        
         public long? ParentId { get; set; }
 
-        public ICollection<DeskWithIdDto> Desks { get; set; }
+        public string ParentTitle { get; set; }
     }
 }

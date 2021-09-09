@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Models.Db.Common;
-using Models.Db.Relations;
 using Models.Db.Sessions;
 using Models.Db.Tree;
 
@@ -21,6 +20,8 @@ namespace Models.Db.Account
         public bool HasSubscription { get; set; }
 
         public virtual ICollection<Folder> AuthoredFolders { get; set; }
+        
+        public virtual ICollection<Desk> AuthoredDesks { get; set; }
 
         // public virtual ICollection<Folder> SharedFolders { get; set; }
         //

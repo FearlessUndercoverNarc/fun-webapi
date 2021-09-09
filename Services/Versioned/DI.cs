@@ -11,6 +11,7 @@ namespace Services.Versioned
         {
             services.AddScoped<IFolderServiceV1, FolderService>();
             services.AddScoped<IFolderServiceV2, FolderService>();
+            services.AddScoped<IDeskServiceV1, DeskService>();
             return services;
         }
     }
