@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Models.Attributes;
 
-namespace Models.DTOs.Requests
+namespace Models.DTOs.Login
 {
     public class LoginDto
     {

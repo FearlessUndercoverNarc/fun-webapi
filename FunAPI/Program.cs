@@ -16,8 +16,22 @@ namespace FunAPI
             CreateHostBuilder(args).Build().Run();
         }
 
+
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.ConfigureKestrel(options =>
+                    {
+                        options.AddServerHeader = false;
+                        options.ListenAnyIP(80);
+                        options.ListenAnyIP(443, listenOptions =>
+                        {
+                            // TODO: Remove when moving to open-source
+                            listenOptions.UseHttps("../ssl_certificate/certificate.pfx", "AzazaEbalMamku");
+                        });
+                    });
+                    webBuilder.UseStartup<Startup>();
+                });
     }
 }

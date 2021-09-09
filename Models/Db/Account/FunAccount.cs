@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Models.Db.Common;
+using Models.Db.Relations;
 using Models.Db.Sessions;
+using Models.Db.Tree;
 
 namespace Models.Db.Account
 {
@@ -15,7 +17,15 @@ namespace Models.Db.Account
 
         [MaxLength(32)]
         public string Password { get; set; }
-        
+
+        public bool HasSubscription { get; set; }
+
+        // public virtual ICollection<Folder> AuthoredFolders { get; set; }
+        //
+        // public virtual ICollection<Folder> SharedFolders { get; set; }
+        //
+        // public virtual ICollection<FolderShare> SharedFoldersRelation { get; set; }
+
         public virtual ICollection<TokenSession> TokenSessions { get; set; }
     }
 }

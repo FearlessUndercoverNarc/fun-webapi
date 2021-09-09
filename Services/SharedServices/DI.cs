@@ -13,6 +13,7 @@ namespace Services.SharedServices
             services.AddScoped<IRequestAccountIdSetterService, RequestAccountIdService>(x => x.GetRequiredService<RequestAccountIdService>());
             
             services.AddScoped<ITokenSessionService, TokenSessionService>();
+            services.AddScoped<IFunAccountService, FunAccountService>();
             return services;
         }
     }

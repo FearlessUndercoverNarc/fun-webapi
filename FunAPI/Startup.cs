@@ -135,7 +135,10 @@ namespace FunAPI
                     "https://localhost",
                     "https://localhost:4200",
                     "http://memorize-cards.fun",
-                    "https://memorize-cards.fun")
+                    "https://memorize-cards.fun",
+                    "http://www.memorize-cards.fun",
+                    "https://www.memorize-cards.fun"
+                )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials()

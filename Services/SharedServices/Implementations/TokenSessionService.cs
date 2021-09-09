@@ -4,8 +4,8 @@ using Infrastructure.Abstractions;
 using Infrastructure.Verbatims;
 using Models.Db.Account;
 using Models.Db.Sessions;
+using Models.DTOs.Login;
 using Models.DTOs.Misc;
-using Models.DTOs.Requests;
 using Models.Misc;
 using Services.SharedServices.Abstractions;
 
@@ -49,7 +49,7 @@ namespace Services.SharedServices.Implementations
 
             // Save token session relation to user
 
-            return new LoginResultDto(funAccount.Id, session.Token);
+            return new LoginResultDto(funAccount.Id, session.Token, funAccount.HasSubscription);
         }
 
         public async Task<TokenSession> GetByToken(string token)

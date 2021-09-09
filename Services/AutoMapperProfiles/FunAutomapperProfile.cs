@@ -1,4 +1,6 @@
 using AutoMapper;
+using Models.Db.Account;
+using Models.DTOs.FunAccounts;
 
 namespace Services.AutoMapperProfiles
 {
@@ -21,12 +23,12 @@ namespace Services.AutoMapperProfiles
             // -----------
 
             
-            // CreateMap<FunAccount, CreateFunAccountDto>()
-            //     .ReverseMap();
-            //
-            // CreateMap<FunAccount, UpdateFunAccountDto>()
-            //     .ReverseMap();
-            //
+            CreateMap<FunAccount, CreateFunAccountDto>()
+                .ReverseMap();
+            
+            CreateMap<FunAccount, UpdateFunAccountDto>()
+                .ReverseMap();
+            
             // CreateMap<FunAccount, FunAccountWithIdDto>()
             //     .ReverseMap();
         }

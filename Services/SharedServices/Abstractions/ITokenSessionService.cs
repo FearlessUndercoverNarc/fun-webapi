@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 using Models.Db.Account;
 using Models.Db.Sessions;
+using Models.DTOs.Login;
 using Models.DTOs.Misc;
-using Models.DTOs.Requests;
 
 namespace Services.SharedServices.Abstractions
 {
