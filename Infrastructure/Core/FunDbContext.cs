@@ -88,14 +88,14 @@ namespace Infrastructure.Core
             //         opt2 => opt2.HasOne(rel => rel.FunAccount).WithMany(account => account.SharedFoldersRelation),
             //         e => e.HasKey(rel => new {rel.FunAccount, rel.Folder})
             //     );
-            //
-            // modelBuilder.Entity<Folder>()
-            //     .HasMany(f => f.Children)
-            //     .WithOne(f => f.Parent);
-            //
-            // modelBuilder.Entity<Folder>()
-            //     .HasOne(f => f.AuthorAccount)
-            //     .WithMany(a => a.AuthoredFolders);
+
+            modelBuilder.Entity<Folder>()
+                .HasMany(f => f.Children)
+                .WithOne(f => f.Parent);
+
+            modelBuilder.Entity<Folder>()
+                .HasOne(f => f.AuthorAccount)
+                .WithMany(a => a.AuthoredFolders);
         }
 
         public DbSet<FunAccount> FunAccounts { get; set; }

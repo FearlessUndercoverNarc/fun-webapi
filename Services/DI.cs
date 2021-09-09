@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Services.AutoMapperProfiles;
 using Services.CommonServices;
 using Services.SharedServices;
+using Services.Versioned;
 
 namespace Services
 {
@@ -21,6 +22,7 @@ namespace Services
             services.AddFunSharedServices();
 
             services.AddFunCommonServices();
+            services.AddFunVersionedServices();
 
             services.AddAutoMapper(cfg => cfg.AddProfile<FunAutomapperProfile>());
 
@@ -43,6 +45,7 @@ namespace Services
             // Add Repositories
             services.AddScoped<ITokenSessionRepository, TokenSessionRepository>();
             services.AddScoped<IFunAccountRepository, FunAccountRepository>();
+            services.AddScoped<IFolderRepository, FolderRepository>();
 
             return services;
         }

@@ -6,9 +6,6 @@ namespace Models.DTOs.FunAccounts
 {
     public class UpdateFunAccountDto
     {
-        [Id(typeof(FunAccount))]
-        public long Id { get; set; }
-
         [Required]
         [String(1, 256)]
         public string Fio { get; set; }

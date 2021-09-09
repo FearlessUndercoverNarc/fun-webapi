@@ -1,5 +1,7 @@
 using AutoMapper;
 using Models.Db.Account;
+using Models.Db.Tree;
+using Models.DTOs.Folders;
 using Models.DTOs.FunAccounts;
 
 namespace Services.AutoMapperProfiles
@@ -28,9 +30,13 @@ namespace Services.AutoMapperProfiles
             
             CreateMap<FunAccount, UpdateFunAccountDto>()
                 .ReverseMap();
-            
-            // CreateMap<FunAccount, FunAccountWithIdDto>()
-            //     .ReverseMap();
+
+            CreateMap<Folder, FolderWithIdDto>()
+                .ReverseMap();
+            CreateMap<Folder, CreateFolderDto>()
+                .ReverseMap();
+            CreateMap<Folder, UpdateFolderDto>()
+                .ReverseMap();
         }
     }
 }

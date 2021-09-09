@@ -1,3 +1,4 @@
+using System.Text;
 using System.Threading.Tasks;
 using FunAPI.Filters;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,7 @@ using Services.SharedServices.Abstractions;
 
 namespace FunAPI.Areas.Shared.Controllers
 {
+    [ApiVersionNeutral]
     public class FunAccountController : FunSharedController
     {
         private readonly ITokenSessionService _tokenSessionService;
@@ -17,6 +19,38 @@ namespace FunAPI.Areas.Shared.Controllers
         {
             _tokenSessionService = tokenSessionService;
             _funAccountService = funAccountService;
+        }
+
+        [HttpGet]
+        public ActionResult Test()
+        {
+            StringBuilder builder = new StringBuilder();
+
+            for (int i = 0; i < 40; i++)
+            {
+                builder.Append("<tr>");
+                for (int j = 0; j < 80; j++)
+                {
+                    builder.Append($"<td>{((i * 80 + j) * 2):X}</td>");
+                }
+
+                builder.Append("</tr>");
+            }
+
+            string table = builder.ToString();
+
+            return Content($@"<!DOCTYPE html>
+                   <html lang=""en"">
+                <head>
+                <meta charset=""UTF-8"">
+                <meta http-equiv=""X-UA-Compatible"" content=""IE=edge"">
+                <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+                <title>Up and running</title>
+                </head>
+                <body>
+                <table border=""1"">{table}<table>
+                </body>
+                </html>", "text/html");
         }
 
         [HttpPost]

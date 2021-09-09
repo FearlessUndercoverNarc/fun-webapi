@@ -23,7 +23,7 @@ namespace Models.Attributes
         {
             if (value is null)
             {
-                return new ValidationResult($"{_entityType.Name}: Provided Value Was null");
+                return ValidationResult.Success;
             }
 
             var checker = validationContext.GetRequiredService<Func<Type, object, bool>>();

@@ -4,11 +4,13 @@ namespace Services.SharedServices.Abstractions
     {
         public long Id { get; }
 
+        public bool HasSubscription { get; set; }
+
         public bool IsSet { get; }
     }
 
     public interface IRequestAccountIdSetterService
     {
-        void Set(long id);
+        void Set(long id, bool hasSubscription);
     }
 }

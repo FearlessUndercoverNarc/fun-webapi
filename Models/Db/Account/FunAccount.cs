@@ -20,8 +20,8 @@ namespace Models.Db.Account
 
         public bool HasSubscription { get; set; }
 
-        // public virtual ICollection<Folder> AuthoredFolders { get; set; }
-        //
+        public virtual ICollection<Folder> AuthoredFolders { get; set; }
+
         // public virtual ICollection<Folder> SharedFolders { get; set; }
         //
         // public virtual ICollection<FolderShare> SharedFoldersRelation { get; set; }

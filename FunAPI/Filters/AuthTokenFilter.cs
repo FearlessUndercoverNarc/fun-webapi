@@ -49,6 +49,8 @@ namespace FunAPI.Filters
                 return;
             }
 
+            var accountByToken = await _tokenSessionService.GetAccountByToken(authToken);
+
             var accountSession = await _tokenSessionService.GetByToken(authToken);
             if (accountSession == null)
             {
@@ -64,7 +66,8 @@ namespace FunAPI.Filters
                 return;
             }
 
-            _requestAccountIdSetterService.Set(accountSession.FunAccountId);
+            
+            _requestAccountIdSetterService.Set(accountByToken.Id, accountByToken.HasSubscription);
 
             await next.Invoke();
 #endif

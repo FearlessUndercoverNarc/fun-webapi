@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using FunAPI.Middlewares;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.AspNetCore.Mvc.Versioning.Conventions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -13,6 +17,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Models.Attributes;
+using Models.Configs;
 using Models.Misc;
 using Newtonsoft.Json;
 using Services;
@@ -75,7 +80,7 @@ namespace FunAPI
             services
                 .AddSwaggerGen(swagger =>
                 {
-                    swagger.SwaggerDoc("v1", new OpenApiInfo() {Title = "FUN API Docs"});
+                    swagger.SwaggerDoc("v1", new OpenApiInfo() {Title = "FUN API Docs V1", Version = "1"});
                     swagger.AddSecurityDefinition("basic", new OpenApiSecurityScheme()
                     {
                         In = ParameterLocation.Header,
@@ -84,6 +89,19 @@ namespace FunAPI
                         Type = SecuritySchemeType.ApiKey
                     });
                 });
+
+            services.AddApiVersioning(options =>
+            {
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.DefaultApiVersion = new ApiVersion(1, 0); // Equals to ApiVersion.Default
+                options.ReportApiVersions = true;
+                // automatically applies an api version based on the name of the defining controller's namespace
+                options.Conventions.Add( new VersionByNamespaceConvention() );
+            });
+            
+            var telegramConfig = Configuration.GetSection(nameof(TelegramConfig)).Get<TelegramConfig>();
+
+            TelegramAPI.Configure(telegramConfig, _env.EnvironmentName);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -152,7 +170,17 @@ namespace FunAPI
                     name: "shared_area",
                     areaName: "Shared",
                     pattern: "shared/{controller}/{action}");
+                endpoints.MapAreaControllerRoute(
+                    name: "v1_area",
+                    areaName: "V1",
+                    pattern: "v1/{controller}/{action}");
+                endpoints.MapAreaControllerRoute(
+                    name: "v1_area",
+                    areaName: "V2",
+                    pattern: "v2/{controller}/{action}");
 
+                endpoints.MapControllers();
+                
                 endpoints.MapFallback(FallbackDelegate);
             });
 

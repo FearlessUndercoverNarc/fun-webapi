@@ -9,13 +9,15 @@ namespace Services.SharedServices.Abstractions
 {
     public class FunAccountService : IFunAccountService
     {
+        private IRequestAccountIdService _requestAccountIdService;
         private IFunAccountRepository _funAccountRepository;
         private IMapper _mapper;
 
-        public FunAccountService(IFunAccountRepository funAccountRepository, IMapper mapper)
+        public FunAccountService(IFunAccountRepository funAccountRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService)
         {
             _funAccountRepository = funAccountRepository;
             _mapper = mapper;
+            _requestAccountIdService = requestAccountIdService;
         }
 
         public async Task<CreatedDto> CreateFunAccount(CreateFunAccountDto createFunAccountDto)
@@ -27,7 +29,8 @@ namespace Services.SharedServices.Abstractions
 
         public async Task UpdateFunAccount(UpdateFunAccountDto updateFunAccountDto)
         {
-            var funAccount = await _funAccountRepository.GetById(updateFunAccountDto.Id);
+            var requestAccountId = _requestAccountIdService.Id;
+            var funAccount = await _funAccountRepository.GetById(requestAccountId);
             string oldPassword = funAccount.Password;
             _mapper.Map(updateFunAccountDto, funAccount);
             if (string.IsNullOrEmpty(updateFunAccountDto.Password))

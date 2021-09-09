@@ -6,11 +6,13 @@ namespace Services.SharedServices.Implementations
     {
         public long Id { get; private set; }
         public bool IsSet { get; private set; }
+        public bool HasSubscription { get; set; }
 
-        public void Set(long id)
+        public void Set(long id, bool hasSubscription)
         {
             Id = id;
             IsSet = true;
+            HasSubscription = hasSubscription;
         }
     }
 }
