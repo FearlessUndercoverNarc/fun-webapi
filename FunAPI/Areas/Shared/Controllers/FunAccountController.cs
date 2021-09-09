@@ -62,7 +62,7 @@ namespace FunAPI.Areas.Shared.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<CreatedDto>> CreateAccount([FromBody] CreateFunAccountDto createFunAccountDto)
+        public async Task<ActionResult<CreatedDto>> Create([FromBody] CreateFunAccountDto createFunAccountDto)
         {
             var createdDto = await _funAccountService.CreateFunAccount(createFunAccountDto);
 
@@ -70,7 +70,7 @@ namespace FunAPI.Areas.Shared.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> UpdateAccount([FromBody] UpdateFunAccountDto updateFunAccountDto)
+        public async Task<ActionResult> Update([FromBody] UpdateFunAccountDto updateFunAccountDto)
         {
             await _funAccountService.UpdateFunAccount(updateFunAccountDto);
 

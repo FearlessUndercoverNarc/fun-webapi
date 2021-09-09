@@ -93,7 +93,8 @@ namespace Infrastructure.Data.Migrations
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<string>("ColorHex")
-                        .HasColumnType("text");
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(512)
@@ -165,17 +166,39 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
-                    b.Property<long>("FolderId")
+                    b.Property<long>("AuthorAccountId")
                         .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<bool>("IsInTrashBin")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsSoftDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime>("LastUpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<long?>("ParentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("FolderId");
+                    b.HasIndex("AuthorAccountId");
 
                     b.HasIndex("IsSoftDeleted");
+
+                    b.HasIndex("ParentId");
 
                     b.ToTable("Desks");
                 });
@@ -261,13 +284,19 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Models.Db.Tree.Desk", b =>
                 {
-                    b.HasOne("Models.Db.Tree.Folder", "Folder")
-                        .WithMany("Desks")
-                        .HasForeignKey("FolderId")
+                    b.HasOne("Models.Db.Account.FunAccount", "AuthorAccount")
+                        .WithMany("AuthoredDesks")
+                        .HasForeignKey("AuthorAccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Folder");
+                    b.HasOne("Models.Db.Tree.Folder", "Parent")
+                        .WithMany("Desks")
+                        .HasForeignKey("ParentId");
+
+                    b.Navigation("AuthorAccount");
+
+                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("Models.Db.Tree.Folder", b =>
@@ -289,6 +318,8 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Models.Db.Account.FunAccount", b =>
                 {
+                    b.Navigation("AuthoredDesks");
+
                     b.Navigation("AuthoredFolders");
 
                     b.Navigation("TokenSessions");

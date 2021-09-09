@@ -35,7 +35,7 @@ namespace Services.External
             catch (WebException ex)
             {
                 var httpWebResponse = ex.Response as HttpWebResponse;
-                var response = await new StreamReader(httpWebResponse.GetResponseStream()).ReadToEndAsync();
+                var response = await new StreamReader(httpWebResponse!.GetResponseStream()).ReadToEndAsync();
                 Console.WriteLine($"Failed to send error to Telegram : {response}");
             }
         }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using FunAPI.Filters;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,11 @@ namespace FunAPI.Areas.V1.Controllers
     [ApiVersion("1.0")]
     public class DeskController : Controller
     {
-        private IDeskServiceV1 _deskServiceV1;
+        private IDeskServiceV1 _deskService;
 
-        public DeskController(IDeskServiceV1 deskServiceV1)
+        public DeskController(IDeskServiceV1 deskService)
         {
-            _deskServiceV1 = deskServiceV1;
+            _deskService = deskService;
         }
 
         [HttpPost]
@@ -28,7 +29,7 @@ namespace FunAPI.Areas.V1.Controllers
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult<CreatedDto>> Create([FromBody] CreateDeskDto createDeskDto)
         {
-            var createdDto = await _deskServiceV1.Create(createDeskDto);
+            var createdDto = await _deskService.Create(createDeskDto);
 
             return Ok(createdDto);
         }
@@ -38,8 +39,52 @@ namespace FunAPI.Areas.V1.Controllers
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult> Update([FromBody] UpdateDeskDto updateDeskDto)
         {
-            await _deskServiceV1.Update(updateDeskDto);
+            await _deskService.Update(updateDeskDto);
             return Ok();
+        }
+
+        [HttpGet]
+        [MapToApiVersion("1.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetMyRoot()
+        {
+            var deskWithIdDtos = await _deskService.GetMyRoot();
+
+            return Ok(deskWithIdDtos);
+        }
+
+        [HttpGet]
+        [MapToApiVersion("1.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetMyTrashBin()
+        {
+            var deskWithIdDtos = await _deskService.GetMyTrashBin();
+
+            return Ok(deskWithIdDtos);
+        }
+
+        [HttpGet]
+        [MapToApiVersion("1.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetByFolder(
+            [Required] [Id(typeof(Folder))] long id
+        )
+        {
+            var deskWithIdDtos = await _deskService.GetByFolder(id);
+
+            return Ok(deskWithIdDtos);
+        }
+        
+        [HttpGet]
+        [MapToApiVersion("1.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetById(
+            [Required] [Id(typeof(Desk))] long id
+        )
+        {
+            var deskWithIdDto = await _deskService.GetById(id);
+
+            return Ok(deskWithIdDto);
         }
 
         [HttpGet]
@@ -48,7 +93,7 @@ namespace FunAPI.Areas.V1.Controllers
         public async Task<ActionResult> MoveToTrashBin(
             [Required] [Id(typeof(Desk))] long id)
         {
-            await _deskServiceV1.MoveToTrashBin(id);
+            await _deskService.MoveToTrashBin(id);
 
             return Ok();
         }
@@ -59,7 +104,7 @@ namespace FunAPI.Areas.V1.Controllers
         public async Task<ActionResult> RestoreFromTrashBin(
             [Required] [Id(typeof(Desk))] long id)
         {
-            await _deskServiceV1.RestoreFromTrashBin(id);
+            await _deskService.RestoreFromTrashBin(id);
 
             return Ok();
         }
@@ -72,7 +117,7 @@ namespace FunAPI.Areas.V1.Controllers
             [Id(typeof(Folder))] long? destinationId
         )
         {
-            await _deskServiceV1.MoveToFolder(id, destinationId);
+            await _deskService.MoveToFolder(id, destinationId);
 
             return Ok();
         }

@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Models.Db.Tree;
 using Models.DTOs.Desks;
 using Models.DTOs.Misc;
 using Models.Misc;
 using Services.External;
+using Services.Versioned.V1;
 using Services.Versioned.V2;
 
 namespace Services.Versioned.Implementations
@@ -53,6 +55,7 @@ namespace Services.Versioned.Implementations
             }
 
             _mapper.Map(updateDeskDto, desk);
+            desk.LastUpdatedAt = DateTime.Now;
 
             await _deskRepository.Update(desk);
         }
@@ -72,6 +75,41 @@ namespace Services.Versioned.Implementations
             return deskWithIdDto;
         }
 
+        async Task<ICollection<DeskWithIdDto>> IDeskServiceV2.GetByFolder(long folderId)
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+            
+            var folder = await _folderRepository.GetById(folderId);
+            // parentFolder can't be null, it's ID is checked in DTO
+
+            if (folder.AuthorAccountId != _requestAccountIdService.Id)
+            {
+                await TelegramAPI.Send($"IDeskServiceV1.GetByFolder:\nAttempt to access desks in restricted location!\nFolderId ({folderId})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Вы не можете создавать здесь что-либо, так как не являетесь владельцем");
+            }
+            
+            var desks = await _deskRepository.GetMany(
+                d => d.ParentId == folderId && d.AuthorAccountId == requestAccountId && !d.IsInTrashBin
+            );
+
+            var deskWithIdDtos = _mapper.Map<ICollection<DeskWithIdDto>>(desks);
+
+            return deskWithIdDtos;
+        }
+
+        async Task<ICollection<DeskWithIdDto>> IDeskServiceV2.GetMyRoot()
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+            
+            var desks = await _deskRepository.GetMany(
+                d => d.ParentId == null && d.AuthorAccountId == requestAccountId && !d.IsInTrashBin
+            );
+
+            var deskWithIdDtos = _mapper.Map<ICollection<DeskWithIdDto>>(desks);
+
+            return deskWithIdDtos;
+        }
+
         async Task IDeskServiceV2.MoveToTrashBin(long id)
         {
             var desk = await _deskRepository.GetById(id);
@@ -89,6 +127,7 @@ namespace Services.Versioned.Implementations
             }
 
             desk.IsInTrashBin = true;
+            desk.LastUpdatedAt = DateTime.Now;
 
             await _deskRepository.Update(desk);
         }
@@ -110,6 +149,7 @@ namespace Services.Versioned.Implementations
             }
 
             desk.IsInTrashBin = false;
+            desk.LastUpdatedAt = DateTime.Now;
 
             await _deskRepository.Update(desk);
         }
@@ -150,6 +190,7 @@ namespace Services.Versioned.Implementations
             }
 
             desk.ParentId = destinationId;
+            desk.LastUpdatedAt = DateTime.Now;
 
             await _deskRepository.Update(desk);
         }

@@ -20,9 +20,9 @@ namespace Services
             var stacktrace = exception.StackTrace ?? "Stack trace empty";
 
             var result = $"Exception:```\n{message}\n{stacktrace}\n```";
-            if (result.Length > 4096)
+            if (result.Length > 2048)
             {
-                stacktrace = stacktrace[..^(result.Length - 4096)];
+                stacktrace = stacktrace[..^(result.Length - 2048)];
                 result = $"Exception:```\n{message}\n{stacktrace}\n```";
             }
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Infrastructure.Abstractions;
@@ -73,7 +74,8 @@ namespace Services.Versioned.Implementations
         {
             var requestAccountId = _requestAccountIdService.Id;
             var folders = await _folderRepository.GetMany(
-                f => f.ParentId == null && f.AuthorAccountId == requestAccountId && !f.IsInTrashBin
+                f => f.ParentId == null && f.AuthorAccountId == requestAccountId && !f.IsInTrashBin,
+                f => f.Desks.Where(d => !d.IsInTrashBin)
             );
 
             var folderWithIdDtos = _mapper.Map<ICollection<FolderWithIdDto>>(folders);
@@ -83,7 +85,10 @@ namespace Services.Versioned.Implementations
 
         async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetSubfoldersByFolder(long id)
         {
-            var parentFolder = await _folderRepository.GetById(id);
+            var parentFolder = await _folderRepository.GetById(
+                id,
+                f => f.Desks.Where(d => !d.IsInTrashBin)
+            );
 
             if (parentFolder.AuthorAccountId != _requestAccountIdService.Id)
             {
@@ -93,7 +98,10 @@ namespace Services.Versioned.Implementations
 
             // TODO: Support shared folders
 
-            var folders = await _folderRepository.GetMany(f => f.ParentId == id && !f.IsInTrashBin);
+            var folders = await _folderRepository.GetMany(
+                f => f.ParentId == id && !f.IsInTrashBin,
+                f => f.Desks.Where(d => !d.IsInTrashBin)
+            );
 
             var folderWithIdDtos = _mapper.Map<ICollection<FolderWithIdDto>>(folders);
 
@@ -102,7 +110,9 @@ namespace Services.Versioned.Implementations
 
         async Task IFolderServiceV1.MoveToTrashBin(long id)
         {
-            var folder = await _folderRepository.GetById(id);
+            var folder = await _folderRepository.GetById(id,
+                f => f.Desks.Where(d => !d.IsInTrashBin)
+            );
 
             // TODO: Support shared folders
             if (folder.AuthorAccountId != _requestAccountIdService.Id)
@@ -118,6 +128,10 @@ namespace Services.Versioned.Implementations
             }
 
             folder.IsInTrashBin = true;
+            foreach (var desk in folder.Desks)
+            {
+                desk.IsInTrashBin = true;
+            }
 
             await _folderRepository.Update(folder);
         }
@@ -125,7 +139,10 @@ namespace Services.Versioned.Implementations
         async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetMyTrashBin()
         {
             var requestAccountId = _requestAccountIdService.Id;
-            var folders = await _folderRepository.GetMany(f => f.AuthorAccountId == requestAccountId && f.IsInTrashBin);
+            var folders = await _folderRepository.GetMany(
+                f => f.AuthorAccountId == requestAccountId && f.IsInTrashBin,
+                f => f.Desks
+            );
 
             var folderWithIdDtos = _mapper.Map<ICollection<FolderWithIdDto>>(folders);
 
@@ -134,7 +151,9 @@ namespace Services.Versioned.Implementations
 
         async Task IFolderServiceV1.RestoreFromTrashBin(long folderId)
         {
-            var folder = await _folderRepository.GetById(folderId);
+            var folder = await _folderRepository.GetById(folderId,
+                f => f.Desks.Where(d => d.IsInTrashBin)
+            );
 
             if (folder.AuthorAccountId != _requestAccountIdService.Id)
             {
@@ -149,6 +168,10 @@ namespace Services.Versioned.Implementations
             }
 
             folder.IsInTrashBin = false;
+            foreach (var desk in folder.Desks)
+            {
+                desk.IsInTrashBin = false;
+            }
 
             await _folderRepository.Update(folder);
         }
