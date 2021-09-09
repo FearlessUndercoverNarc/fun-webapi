@@ -60,7 +60,7 @@ namespace FunAPI.Areas.V2.Controllers
         }
 
         [HttpGet]
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult<ICollection<FolderWithIdDto>>> GetMyTrashBin()
         {
