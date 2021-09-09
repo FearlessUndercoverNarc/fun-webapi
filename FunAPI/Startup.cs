@@ -1,12 +1,12 @@
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using FunAPI.Middlewares;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.JsonPatch.Operations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning.Conventions;
 using Microsoft.Extensions.Configuration;
@@ -80,8 +80,8 @@ namespace FunAPI
             services
                 .AddSwaggerGen(swagger =>
                 {
-                    swagger.SwaggerDoc("v1", new OpenApiInfo() {Title = "FUN API Docs V1", Version = "1"});
-                    swagger.SwaggerDoc("v2", new OpenApiInfo() {Title = "FUN API Docs V2", Version = "2"});
+                    swagger.SwaggerDoc("1.0", new OpenApiInfo() {Title = "FUN API Docs V1", Version = "1.0"});
+                    swagger.SwaggerDoc("2.0", new OpenApiInfo() {Title = "FUN API Docs V2", Version = "2.0"});
                     swagger.AddSecurityDefinition("basic", new OpenApiSecurityScheme()
                     {
                         In = ParameterLocation.Header,
@@ -89,26 +89,19 @@ namespace FunAPI
                         Name = "auth-token",
                         Type = SecuritySchemeType.ApiKey
                     });
+                    
+                    // Predicate below allows us to select actions based on their parameters, so it receives version and all methods, and then filters them all
+                    swagger.DocInclusionPredicate((version, desc) =>
+                    {
+                        if (!desc.TryGetMethodInfo(out MethodInfo methodInfo)) return false;
 
-                    // This call remove version from parameter, without it we will have version as parameter 
-                    // for all endpoints in swagger UI
-                    swagger.OperationFilter<RemoveVersionFromParameter>();
+                        var versions = methodInfo
+                            .GetCustomAttributes(true)
+                            .OfType<MapToApiVersionAttribute>()
+                            .SelectMany(attr => attr.Versions);
 
-                    // This make replacement of v{version:apiVersion} to real version of corresponding swagger doc.
-                    swagger.DocumentFilter<ReplaceVersionWithExactValueInPath>();
-
-                    // This on used to exclude endpoint mapped to not specified in swagger version.
-                    // In this particular example we exclude 'GET /api/v2/Values/otherget/three' endpoint,
-                    // because it was mapped to v3 with attribute: MapToApiVersion("3")
-                    // swagger.DocInclusionPredicate((version, desc) =>
-                    // {
-                    //     var maps = desc.Action()
-                    //         .OfType<MapToApiVersionAttribute>()
-                    //         .SelectMany(attr => attr.Versions)
-                    //         .ToArray();
-                    //
-                    //     return versions.Any(v => $"v{v.ToString()}" == version) && (maps.Length == 0 || maps.Any(v => $"v{v.ToString()}" == version));
-                    // });
+                        return versions.Any(v => v.ToString() == version) || methodInfo.DeclaringType!.FullName!.Contains("Shared");
+                    });
                 });
 
             services.AddApiVersioning(options =>
@@ -123,22 +116,6 @@ namespace FunAPI
             var telegramConfig = Configuration.GetSection(nameof(TelegramConfig)).Get<TelegramConfig>();
 
             TelegramAPI.Configure(telegramConfig, _env.EnvironmentName);
-        }
-
-        public class RemoveVersionFromParameter : IOperationFilter
-        {
-            public void Apply(OpenApiOperation operation, OperationFilterContext context)
-            {
-                var versionParameter = operation.Parameters.Single(p => p.Name == "version");
-                operation.Parameters.Remove(versionParameter);
-            }
-        }
-
-        public class ReplaceVersionWithExactValueInPath : IDocumentFilter
-        {
-            public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
-            {
-            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -159,8 +136,8 @@ namespace FunAPI
                 app.UseSwagger();
                 app.UseSwaggerUI(c =>
                 {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "FUN API Docs V1");
-                    c.SwaggerEndpoint("/swagger/v2/swagger.json", "FUN API Docs V2");
+                    c.SwaggerEndpoint("/swagger/1.0/swagger.json", "FUN API Docs V1");
+                    c.SwaggerEndpoint("/swagger/2.0/swagger.json", "FUN API Docs V2");
                     c.RoutePrefix = "docs";
                 });
             }
