@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Models.Db.Account;
 using Models.Db.Common;
-using Models.Db.Relations;
 
 namespace Models.Db.Tree
 {

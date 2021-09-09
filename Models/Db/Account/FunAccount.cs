@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Models.Db.Common;
-using Models.Db.Relations;
 using Models.Db.Sessions;
 using Models.Db.Tree;
 

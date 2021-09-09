@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Models.Attributes;
-using Models.Db.Account;
 
 namespace Models.DTOs.FunAccounts
 {

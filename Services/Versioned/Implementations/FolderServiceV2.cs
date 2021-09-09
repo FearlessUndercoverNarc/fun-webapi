@@ -86,7 +86,7 @@ namespace Services.Versioned.Implementations
             return folderWithIdDtos;
         }
 
-        async Task IFolderServiceV2.MoveToTrash(long id)
+        async Task IFolderServiceV2.MoveToTrashBin(long id)
         {
             var folder = await _folderRepository.GetById(id);
 
@@ -118,7 +118,7 @@ namespace Services.Versioned.Implementations
             return folderWithIdDtos;
         }
 
-        async Task IFolderServiceV2.RestoreFromTrash(long folderId)
+        async Task IFolderServiceV2.RestoreFromTrashBin(long folderId)
         {
             var folder = await _folderRepository.GetById(folderId);
 

@@ -5,7 +5,6 @@ using Infrastructure.Verbatims;
 using Models.Db.Account;
 using Models.Db.Sessions;
 using Models.DTOs.Login;
-using Models.DTOs.Misc;
 using Models.Misc;
 using Services.SharedServices.Abstractions;
 
