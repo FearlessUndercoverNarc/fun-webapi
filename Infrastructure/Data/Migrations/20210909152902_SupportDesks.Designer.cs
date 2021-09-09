@@ -3,15 +3,17 @@ using System;
 using Infrastructure.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(FunDbContext))]
-    partial class FunDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210909152902_SupportDesks")]
+    partial class SupportDesks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -185,7 +187,7 @@ namespace Infrastructure.Data.Migrations
                     b.Property<DateTime>("LastUpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<long>("ParentId")
+                    b.Property<long?>("ParentId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Title")
@@ -213,17 +215,11 @@ namespace Infrastructure.Data.Migrations
                     b.Property<long>("AuthorAccountId")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<bool>("IsInTrashBin")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsSoftDeleted")
                         .HasColumnType("boolean");
-
-                    b.Property<DateTime>("LastUpdatedAt")
-                        .HasColumnType("timestamp without time zone");
 
                     b.Property<long?>("ParentId")
                         .HasColumnType("bigint");
@@ -298,9 +294,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasOne("Models.Db.Tree.Folder", "Parent")
                         .WithMany("Desks")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ParentId");
 
                     b.Navigation("AuthorAccount");
 

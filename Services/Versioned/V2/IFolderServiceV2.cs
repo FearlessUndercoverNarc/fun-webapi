@@ -22,5 +22,7 @@ namespace Services.Versioned.V2
         Task MoveToTrashBin(long folderId);
 
         Task RestoreFromTrashBin(long folderId);
+        
+        Task RemoveFromTrashBin(long id);
     }
 }

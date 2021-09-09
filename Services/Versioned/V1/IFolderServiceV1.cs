@@ -15,12 +15,14 @@ namespace Services.Versioned.V1
         
         Task<ICollection<FolderWithIdDto>> GetMyTrashBin();
         
-        Task<ICollection<FolderWithIdDto>> GetSubfoldersByFolder(long folderId);
+        Task<ICollection<FolderWithIdDto>> GetSubfoldersByFolder(long id);
 
-        Task MoveToFolder(long folderId, long? destinationId);
+        Task MoveToFolder(long id, long? destinationId);
 
-        Task MoveToTrashBin(long folderId);
+        Task MoveToTrashBin(long id);
         
-        Task RestoreFromTrashBin(long folderId);
+        Task RestoreFromTrashBin(long id);
+        
+        Task RemoveFromTrashBin(long id);
     }
 }

@@ -27,7 +27,9 @@ namespace FunAPI.Areas.V1.Controllers
         [HttpPost]
         [MapToApiVersion("1.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
-        public async Task<ActionResult<CreatedDto>> Create([FromBody] CreateFolderDto createFolderDto)
+        public async Task<ActionResult<CreatedDto>> Create(
+            [FromBody] CreateFolderDto createFolderDto
+        )
         {
             var createdDto = await _folderService.Create(createFolderDto);
 
@@ -37,7 +39,9 @@ namespace FunAPI.Areas.V1.Controllers
         [HttpPost]
         [MapToApiVersion("1.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
-        public async Task<ActionResult> Update([FromBody] UpdateFolderDto updateFolderDto)
+        public async Task<ActionResult> Update(
+            [FromBody] UpdateFolderDto updateFolderDto
+        )
         {
             await _folderService.Update(updateFolderDto);
             return Ok();
@@ -61,14 +65,14 @@ namespace FunAPI.Areas.V1.Controllers
             var folderWithIdDtos = await _folderService.GetMyTrashBin();
 
             return Ok(folderWithIdDtos);
-            ;
         }
 
-        [HttpGet]
+        [HttpDelete]
         [MapToApiVersion("1.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult> MoveToTrashBin(
-            [Required] [Id(typeof(Folder))] long id)
+            [Required] [Id(typeof(Folder))] long id
+        )
         {
             await _folderService.MoveToTrashBin(id);
 
@@ -79,9 +83,22 @@ namespace FunAPI.Areas.V1.Controllers
         [MapToApiVersion("1.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult> RestoreFromTrashBin(
-            [Required] [Id(typeof(Folder))] long id)
+            [Required] [Id(typeof(Folder))] long id
+        )
         {
             await _folderService.RestoreFromTrashBin(id);
+
+            return Ok();
+        }
+        
+        [HttpDelete]
+        [MapToApiVersion("1.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult> RemoveFromTrashBin(
+            [Required] [Id(typeof(Folder))] long id
+        )
+        {
+            await _folderService.RemoveFromTrashBin(id);
 
             return Ok();
         }

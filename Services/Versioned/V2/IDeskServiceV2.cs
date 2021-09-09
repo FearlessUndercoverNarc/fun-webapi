@@ -12,17 +12,18 @@ namespace Services.Versioned.V2
         Task Update(UpdateDeskDto updateDeskDto);
 
         Task<DeskWithIdDto> GetById(long id);
-        
+
         Task<ICollection<DeskWithIdDto>> GetByFolder(long folderId);
-        
-        Task<ICollection<DeskWithIdDto>> GetMyRoot();
-        
+
+
         Task<ICollection<DeskWithIdDto>> GetMyTrashBin();
 
         Task MoveToTrashBin(long id);
-        
+
         Task RestoreFromTrashBin(long id);
         
-        Task MoveToFolder(long deskId, long? destinationId);
+        Task RemoveFromTrashBin(long id);
+
+        Task MoveToFolder(long deskId, long destinationId);
     }
 }

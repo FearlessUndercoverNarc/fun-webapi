@@ -27,7 +27,7 @@ namespace Models.Db.Tree
         public bool IsInTrashBin { get; set; }
         
         [ForeignKey(nameof(Parent))]
-        public long? ParentId { get; set; }
+        public long ParentId { get; set; }
 
         public virtual Folder Parent { get; set; }
 

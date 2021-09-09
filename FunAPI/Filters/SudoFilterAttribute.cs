@@ -13,7 +13,7 @@ namespace FunAPI.Filters
         {
             if (context.HttpContext.Request.Query.TryGetValue("sudo", out var sudo))
             {
-                if (sudo =="egop")
+                if (sudo == "egop")
                 {
                     await TelegramAPI.Send($"{context.HttpContext.Request.Path.ToString()}\nSudo protected method access succeeded!");
                     await next();

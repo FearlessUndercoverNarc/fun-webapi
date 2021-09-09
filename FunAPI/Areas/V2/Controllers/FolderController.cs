@@ -25,11 +25,13 @@ namespace FunAPI.Areas.V2.Controllers
             _folderService = folderService;
         }
 
-       
+
         [HttpPost]
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
-        public async Task<ActionResult<CreatedDto>> Create([FromBody] CreateFolderDto createFolderDto)
+        public async Task<ActionResult<CreatedDto>> Create(
+            [FromBody] CreateFolderDto createFolderDto
+        )
         {
             var createdDto = await _folderService.Create(createFolderDto);
 
@@ -37,16 +39,18 @@ namespace FunAPI.Areas.V2.Controllers
         }
 
         [HttpPost]
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
-        public async Task<ActionResult> Update([FromBody] UpdateFolderDto updateFolderDto)
+        public async Task<ActionResult> Update(
+            [FromBody] UpdateFolderDto updateFolderDto
+        )
         {
             await _folderService.Update(updateFolderDto);
             return Ok();
         }
 
         [HttpGet]
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult<ICollection<FolderWithIdDto>>> GetMyRoot()
         {
@@ -65,11 +69,12 @@ namespace FunAPI.Areas.V2.Controllers
             return Ok(folderWithIdDtos);
         }
 
-        [HttpGet]
-        [MapToApiVersion("1.0")]
+        [HttpDelete]
+        [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult> MoveToTrashBin(
-            [Required] [Id(typeof(Folder))] long id)
+            [Required] [Id(typeof(Folder))] long id
+        )
         {
             await _folderService.MoveToTrashBin(id);
 
@@ -77,18 +82,31 @@ namespace FunAPI.Areas.V2.Controllers
         }
 
         [HttpGet]
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult> RestoreFromTrashBin(
-            [Required] [Id(typeof(Folder))] long id)
+            [Required] [Id(typeof(Folder))] long id
+        )
         {
             await _folderService.RestoreFromTrashBin(id);
 
             return Ok();
         }
+        
+        [HttpDelete]
+        [MapToApiVersion("2.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult> RemoveFromTrashBin(
+            [Required] [Id(typeof(Folder))] long id
+        )
+        {
+            await _folderService.RemoveFromTrashBin(id);
+
+            return Ok();
+        }
 
         [HttpGet]
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult<ICollection<FolderWithIdDto>>> GetSubfoldersByFolder(
             [Required] [Id(typeof(Folder))] long id
@@ -100,7 +118,7 @@ namespace FunAPI.Areas.V2.Controllers
         }
 
         [HttpGet]
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult> MoveToFolder(
             [Required] [Id(typeof(Folder))] long id,

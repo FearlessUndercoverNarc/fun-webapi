@@ -15,14 +15,14 @@ namespace Services.Versioned.V1
         
         Task<ICollection<DeskWithIdDto>> GetByFolder(long folderId);
         
-        Task<ICollection<DeskWithIdDto>> GetMyRoot();
-        
         Task<ICollection<DeskWithIdDto>> GetMyTrashBin();
 
         Task MoveToTrashBin(long id);
         
         Task RestoreFromTrashBin(long id);
         
-        Task MoveToFolder(long deskId, long? destinationId);
+        Task RemoveFromTrashBin(long id);
+        
+        Task MoveToFolder(long deskId, long destinationId);
     }
 }

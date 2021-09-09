@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Models.DTOs.Desks;
 
 namespace Models.DTOs.Folders
@@ -6,6 +7,10 @@ namespace Models.DTOs.Folders
     public class FolderWithIdDto
     {
         public string Title { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime LastUpdatedAt { get; set; }
 
         public long AuthorAccountId { get; set; }
 
