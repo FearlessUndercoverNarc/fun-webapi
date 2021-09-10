@@ -1,12 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Threading.Tasks;
 using FunAPI.Filters;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Models.Attributes;
 using Models.Db.Tree;
 using Models.DTOs.Cards;
 using Models.DTOs.Misc;
+using Models.Misc;
+using Services;
+using Services.CommonServices.Abstractions;
 using Services.Versioned.V2;
 
 namespace FunAPI.Areas.V2.Controllers
@@ -18,11 +23,16 @@ namespace FunAPI.Areas.V2.Controllers
     [ApiVersion("2.0")]
     public class CardController : Controller
     {
+        private const int MaxCardImageSizeInMegabytes = 5;
+        
         private ICardServiceV2 _cardService;
 
-        public CardController(ICardServiceV2 cardService)
+        private IImageService _imageService;
+
+        public CardController(ICardServiceV2 cardService, IImageService imageService)
         {
             _cardService = cardService;
+            _imageService = imageService;
         }
 
         [HttpPost]
@@ -95,6 +105,34 @@ namespace FunAPI.Areas.V2.Controllers
             await _cardService.Remove(id);
 
             return Ok();
+        }
+
+
+        [HttpPost]
+        [MapToApiVersion("2.0")]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
+        public async Task<ActionResult<ImageDto>> UploadImage(IFormFile image)
+        {
+            image.EnsureNotNullHandled("image is missing");
+
+            await using var ms = new MemoryStream();
+            await image.CopyToAsync(ms);
+
+            switch (ms.Length)
+            {
+                case 0:
+                    throw new FunException("image was empty");
+                case > MaxCardImageSizeInMegabytes * 1024 * 1024:
+                    throw new FunException($"Размер изображения превышает максимальный ({MaxCardImageSizeInMegabytes} Мб)");
+            }
+
+            ms.Position = 0;
+
+            var imageName = await _imageService.Create(image.FileName, "Cards", ms.ToArray());
+
+            // var file = await _baseImageService.Create(filename, "Uploaded", ms.ToArray());
+
+            return new ImageDto(imageName);
         }
     }
 }
