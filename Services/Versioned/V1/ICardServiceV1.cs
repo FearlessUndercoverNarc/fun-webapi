@@ -5,7 +5,7 @@ using Models.DTOs.Misc;
 
 namespace Services.Versioned.V1
 {
-    public interface ICardsServiceV1
+    public interface ICardServiceV1
     {
         Task<CreatedDto> Create(CreateCardDto createCardDto);
 
