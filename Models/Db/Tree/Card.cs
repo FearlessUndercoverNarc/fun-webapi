@@ -13,6 +13,8 @@ namespace Models.Db.Tree
         [MaxLength(128)]
         public string Title { get; set; }
 
+        // TODO: IMAGE MOTHERFUCKER! Migrate from Akiana    
+        
         [MaxLength(512)]
         public string Description { get; set; }
 

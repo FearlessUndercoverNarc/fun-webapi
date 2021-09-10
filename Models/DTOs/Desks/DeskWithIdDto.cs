@@ -16,7 +16,7 @@ namespace Models.DTOs.Desks
 
         public string AuthorAccountFio { get; set; }
         
-        public long? ParentId { get; set; }
+        public long ParentId { get; set; }
 
         public string ParentTitle { get; set; }
     }

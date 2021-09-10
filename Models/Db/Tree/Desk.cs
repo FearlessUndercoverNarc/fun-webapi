@@ -25,6 +25,8 @@ namespace Models.Db.Tree
         public virtual FunAccount AuthorAccount { get; set; }
 
         public bool IsInTrashBin { get; set; }
+
+        public virtual ICollection<DeskActionHistoryItem> HistoryItems { get; set; }
         
         [ForeignKey(nameof(Parent))]
         public long ParentId { get; set; }
