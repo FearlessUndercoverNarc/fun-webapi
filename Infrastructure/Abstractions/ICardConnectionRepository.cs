@@ -5,7 +5,7 @@ namespace Infrastructure.Abstractions
 {
     using T = CardConnection;
 
-    public interface ICardConnectionRepository : IAdd<T>, IRemove<T>, IGetMany<T>
+    public interface ICardConnectionRepository : IAdd<T>, IRemove<T>, IGetMany<T>, IGetOne<T>, IGetById<T>
     {
     }
 }

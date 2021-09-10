@@ -21,8 +21,9 @@ namespace FunAPI.Areas.Shared.Controllers
             _funAccountService = funAccountService;
         }
 
+        [NonAction]
         [HttpGet]
-        public ActionResult Test()
+        private ActionResult Test()
         {
             StringBuilder builder = new StringBuilder();
 

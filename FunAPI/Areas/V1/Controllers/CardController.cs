@@ -17,11 +17,11 @@ namespace FunAPI.Areas.V1.Controllers
     [ApiVersion("1.0")]
     public class CardController : Controller
     {
-        private ICardsServiceV1 _cardsService;
+        private ICardServiceV1 _cardService;
 
-        public CardController(ICardsServiceV1 cardsService)
+        public CardController(ICardServiceV1 cardService)
         {
-            _cardsService = cardsService;
+            _cardService = cardService;
         }
 
         [HttpPost]
@@ -29,7 +29,7 @@ namespace FunAPI.Areas.V1.Controllers
         [MapToApiVersion("1.0")]
         public async Task<ActionResult<CreatedDto>> Create([FromBody] CreateCardDto createCardDto)
         {
-            var createdDto = await _cardsService.Create(createCardDto);
+            var createdDto = await _cardService.Create(createCardDto);
 
             return Ok(createdDto);
         }
@@ -39,7 +39,7 @@ namespace FunAPI.Areas.V1.Controllers
         [MapToApiVersion("1.0")]
         public async Task<ActionResult> Update([FromBody] UpdateCardDto updateCardDto)
         {
-            await _cardsService.Update(updateCardDto);
+            await _cardService.Update(updateCardDto);
 
             return Ok();
         }
@@ -51,7 +51,7 @@ namespace FunAPI.Areas.V1.Controllers
             [Required] [Id(typeof(Desk))] long id
         )
         {
-            var cardWithIdDtos = await _cardsService.GetAllByDesk(id);
+            var cardWithIdDtos = await _cardService.GetAllByDesk(id);
 
             return Ok(cardWithIdDtos);
         }
@@ -67,7 +67,7 @@ namespace FunAPI.Areas.V1.Controllers
             [Required] [Range(0, 10000)] uint bottom
         )
         {
-            var cardWithIdDtos = await _cardsService.GetByDeskAndRect(id, left, right, top, bottom);
+            var cardWithIdDtos = await _cardService.GetByDeskAndRect(id, left, right, top, bottom);
 
             return Ok(cardWithIdDtos);
         }
@@ -79,7 +79,7 @@ namespace FunAPI.Areas.V1.Controllers
             [Required] [Id(typeof(Card))] long id
         )
         {
-            var cardWithIdDto = await _cardsService.GetById(id);
+            var cardWithIdDto = await _cardService.GetById(id);
 
             return Ok(cardWithIdDto);
         }
@@ -91,7 +91,7 @@ namespace FunAPI.Areas.V1.Controllers
             [Required] [Id(typeof(Card))] long id
         )
         {
-            await _cardsService.Remove(id);
+            await _cardService.Remove(id);
 
             return Ok();
         }

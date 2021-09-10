@@ -15,6 +15,7 @@ namespace FunAPI.Areas.V2.Controllers
     [ValidateModelFilter]
     [ResponseCache(NoStore = true, Duration = 0)]
     [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     public class DeskController : Controller
     {
         private IDeskServiceV2 _deskService;

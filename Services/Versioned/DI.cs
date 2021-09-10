@@ -13,8 +13,10 @@ namespace Services.Versioned
             services.AddScoped<IFolderServiceV2, FolderService>();
             services.AddScoped<IDeskServiceV1, DeskService>();
             services.AddScoped<IDeskServiceV2, DeskService>();
-            services.AddScoped<ICardsServiceV1, CardsService>();
-            services.AddScoped<ICardsServiceV2, CardsService>();
+            services.AddScoped<ICardServiceV1, CardService>();
+            services.AddScoped<ICardServiceV2, CardService>();
+            services.AddScoped<ICardConnectionServiceV1, CardConnectionService>();
+            services.AddScoped<ICardConnectionServiceV2, CardConnectionService>();
             return services;
         }
     }
