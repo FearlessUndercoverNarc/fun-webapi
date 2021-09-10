@@ -215,13 +215,13 @@ namespace FunAPI
             var ipLocation = await webClient.DownloadStringTaskAsync($"https://api.iplocation.net/?ip={remoteIp}");
 
             var deserializeObject = JsonConvert.DeserializeObject<dynamic>(ipLocation);
-            var isp = deserializeObject.isp;
-            var country_name = deserializeObject.country_name;
+            var isp = deserializeObject!.isp;
+            var countryName = deserializeObject!.country_name;
 
             // https://api.iplocation.net/?ip=XX.XX.XX.XX
             if (context.Request.Method.ToUpper() != "GET")
             {
-                await TelegramAPI.Send($"Unknown endpoint Fallback!\n{context.Request.Path}\nMethod: {context.Request.Method}\nIP: {remoteIp}\nISP: {isp}\nCountry: {country_name}");
+                await TelegramAPI.Send($"Unknown endpoint Fallback!\n{context.Request.Path}\nMethod: {context.Request.Method}\nIP: {remoteIp}\nISP: {isp}\nCountry: {countryName}");
                 await context.Response.WriteAsync("What are you doing bro?\nPlease use existing endpoints :)");
             }
             else
