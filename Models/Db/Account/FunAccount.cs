@@ -23,6 +23,8 @@ namespace Models.Db.Account
         
         public virtual ICollection<Desk> AuthoredDesks { get; set; }
 
+        public virtual ICollection<DeskActionHistoryItem> FiredActions { get; set; }
+
         // public virtual ICollection<Folder> SharedFolders { get; set; }
         //
         // public virtual ICollection<FolderShare> SharedFoldersRelation { get; set; }
