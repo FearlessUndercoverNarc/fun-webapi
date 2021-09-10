@@ -9,6 +9,7 @@ namespace Services.CommonServices
         public static IServiceCollection AddFunCommonServices(this IServiceCollection services)
         {
             services.AddSingleton<IRequestCounterService, RequestCounterService>();
+            services.AddSingleton<IImageService, ImageService>();
             return services;
         }
     }
