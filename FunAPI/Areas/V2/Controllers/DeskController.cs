@@ -26,7 +26,7 @@ namespace FunAPI.Areas.V2.Controllers
 
         [HttpPost]
         [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter))]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult<CreatedDto>> Create(
             [FromBody] CreateDeskDto createDeskDto
         )
@@ -49,7 +49,7 @@ namespace FunAPI.Areas.V2.Controllers
 
         [HttpGet]
         [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter))]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetMyTrashBin()
         {
             var deskWithIdDtos = await _deskService.GetMyTrashBin();
@@ -60,7 +60,7 @@ namespace FunAPI.Areas.V2.Controllers
 
         [HttpGet]
         [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter))]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetByFolder(
             [Required] [Id(typeof(Folder))] long id
         )
@@ -72,7 +72,7 @@ namespace FunAPI.Areas.V2.Controllers
 
         [HttpGet]
         [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter))]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetById(
             [Required] [Id(typeof(Desk))] long id
         )
@@ -84,7 +84,7 @@ namespace FunAPI.Areas.V2.Controllers
 
         [HttpDelete]
         [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter))]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult> MoveToTrashBin(
             [Required] [Id(typeof(Desk))] long id
         )
@@ -96,7 +96,7 @@ namespace FunAPI.Areas.V2.Controllers
 
         [HttpGet]
         [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter))]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult> RestoreFromTrashBin(
             [Required] [Id(typeof(Desk))] long id
         )
@@ -108,7 +108,7 @@ namespace FunAPI.Areas.V2.Controllers
 
         [HttpDelete]
         [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter))]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult> RemoveFromTrashBin(
             [Required] [Id(typeof(Desk))] long id
         )
@@ -120,7 +120,7 @@ namespace FunAPI.Areas.V2.Controllers
 
         [HttpGet]
         [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter))]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult> MoveToFolder(
             [Required] [Id(typeof(Desk))] long id,
             [Required] [Id(typeof(Folder))] long destinationId

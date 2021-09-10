@@ -1,6 +1,7 @@
 using AutoMapper;
 using Models.Db.Account;
 using Models.Db.Tree;
+using Models.DTOs.Cards;
 using Models.DTOs.Desks;
 using Models.DTOs.Folders;
 using Models.DTOs.FunAccounts;
@@ -44,6 +45,13 @@ namespace Services.AutoMapperProfiles
             CreateMap<Desk, CreateDeskDto>()
                 .ReverseMap();
             CreateMap<Desk, UpdateDeskDto>()
+                .ReverseMap();
+
+            CreateMap<Card, CardWithIdDto>()
+                .ReverseMap();
+            CreateMap<Card, CreateCardDto>()
+                .ReverseMap();
+            CreateMap<Card, UpdateCardDto>()
                 .ReverseMap();
         }
     }

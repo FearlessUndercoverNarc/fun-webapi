@@ -12,6 +12,9 @@ namespace Services.Versioned
             services.AddScoped<IFolderServiceV1, FolderService>();
             services.AddScoped<IFolderServiceV2, FolderService>();
             services.AddScoped<IDeskServiceV1, DeskService>();
+            services.AddScoped<IDeskServiceV2, DeskService>();
+            services.AddScoped<ICardsServiceV1, CardsService>();
+            services.AddScoped<ICardsServiceV2, CardsService>();
             return services;
         }
     }
