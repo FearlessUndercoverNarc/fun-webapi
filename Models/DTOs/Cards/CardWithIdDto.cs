@@ -2,11 +2,15 @@
 {
     public class CardWithIdDto
     {
-        public float X { get; set; }
-        public float Y { get; set; }
+        public long Id { get; set; }
+        
+        public uint X { get; set; }
+        public uint Y { get; set; }
 
         public string Title { get; set; }
 
+        public string Image { get; set; }
+        
         public string Description { get; set; }
 
         public string ExternalUrl { get; set; }
