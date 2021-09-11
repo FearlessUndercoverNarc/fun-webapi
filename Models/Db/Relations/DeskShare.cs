@@ -4,16 +4,16 @@ using Models.Db.Tree;
 
 namespace Models.Db.Relations
 {
-    public class FolderShare
+    public class DeskShare
     {
         [ForeignKey(nameof(FunAccount))]
         public long FunAccountId { get; set; }
 
         public virtual FunAccount FunAccount { get; set; }
 
-        [ForeignKey(nameof(Folder))]
-        public long FolderId { get; set; }
+        [ForeignKey(nameof(Desk))]
+        public long DeskId { get; set; }
 
-        public virtual Folder Folder { get; set; }
+        public virtual Desk Desk { get; set; }
     }
 }

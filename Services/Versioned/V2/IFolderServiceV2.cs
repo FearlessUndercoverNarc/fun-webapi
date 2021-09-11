@@ -12,6 +12,8 @@ namespace Services.Versioned.V2
         Task Update(UpdateFolderDto updateFolderDto);
 
         Task<ICollection<FolderWithIdDto>> GetMyRoot();
+        
+        Task<ICollection<FolderWithIdDto>> GetSharedToMeRoots();
 
         Task<ICollection<FolderWithIdDto>> GetMyTrashBin();
 

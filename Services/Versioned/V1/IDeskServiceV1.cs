@@ -15,6 +15,8 @@ namespace Services.Versioned.V1
         
         Task<ICollection<DeskWithIdDto>> GetByFolder(long folderId);
         
+        Task<ICollection<DeskWithIdDto>> GetSharedToMe();
+        
         Task<ICollection<DeskWithIdDto>> GetMyTrashBin();
 
         Task MoveToTrashBin(long id);

@@ -8,7 +8,7 @@ namespace Models.DTOs.Cards
     {
         [Required]
         [Id(typeof(Card))]
-        public int Id { get; set; }
+        public long Id { get; set; }
         
         [Required]
         [Range(0, 10000)]

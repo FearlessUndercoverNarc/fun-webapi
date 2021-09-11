@@ -58,6 +58,17 @@ namespace FunAPI.Areas.V2.Controllers
 
             return Ok(folderWithIdDtos);
         }
+        
+        
+        [HttpGet]
+        [MapToApiVersion("2.0")]
+        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
+        public async Task<ActionResult<ICollection<FolderWithIdDto>>> GetSharedToMeRoot()
+        {
+            var folderWithIdDtos = await _folderService.GetSharedToMeRoots();
+
+            return Ok(folderWithIdDtos);
+        }
 
         [HttpGet]
         [MapToApiVersion("2.0")]

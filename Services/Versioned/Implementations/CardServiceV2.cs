@@ -16,8 +16,7 @@ namespace Services.Versioned.Implementations
             var requestAccountId = _requestAccountIdService.Id;
             var desk = await _deskRepository.GetById(createCardDto.DeskId);
 
-            // TODO: Support shared desks
-            if (requestAccountId != desk.AuthorAccountId)
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardServiceV2.Create:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к изменению этой доски");
@@ -43,8 +42,7 @@ namespace Services.Versioned.Implementations
 
             var desk = card.Desk;
 
-            // TODO: Support shared desks
-            if (requestAccountId != desk.AuthorAccountId)
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardServiceV2.Update:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к изменению этой доски");
@@ -63,8 +61,7 @@ namespace Services.Versioned.Implementations
 
             var desk = await _deskRepository.GetById(id);
 
-            // TODO: Support shared desks
-            if (requestAccountId != desk.AuthorAccountId)
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardServiceV2.GetAllByDesk:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доски");
@@ -83,8 +80,7 @@ namespace Services.Versioned.Implementations
 
             var desk = await _deskRepository.GetById(id);
 
-            // TODO: Support shared desks
-            if (requestAccountId != desk.AuthorAccountId)
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardServiceV2.GetByDeskAndRect:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
@@ -112,8 +108,7 @@ namespace Services.Versioned.Implementations
 
             var desk = card.Desk;
 
-            // TODO: Support shared desks
-            if (requestAccountId != desk.AuthorAccountId)
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardServiceV2.GetById:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
@@ -135,8 +130,7 @@ namespace Services.Versioned.Implementations
 
             var desk = card.Desk;
 
-            // TODO: Support shared desks
-            if (requestAccountId != desk.AuthorAccountId)
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardServiceV2.GetById:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");

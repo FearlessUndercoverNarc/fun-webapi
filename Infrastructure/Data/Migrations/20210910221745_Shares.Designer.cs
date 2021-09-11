@@ -3,15 +3,17 @@ using System;
 using Infrastructure.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(FunDbContext))]
-    partial class FunDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210910221745_Shares")]
+    partial class Shares
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,21 +51,6 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("IsSoftDeleted");
 
                     b.ToTable("FunAccounts");
-                });
-
-            modelBuilder.Entity("Models.Db.Relations.DeskShare", b =>
-                {
-                    b.Property<long>("FunAccountId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("DeskId")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("FunAccountId", "DeskId");
-
-                    b.HasIndex("DeskId");
-
-                    b.ToTable("DeskShare");
                 });
 
             modelBuilder.Entity("Models.Db.Relations.FolderShare", b =>
@@ -310,25 +297,6 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Folders");
                 });
 
-            modelBuilder.Entity("Models.Db.Relations.DeskShare", b =>
-                {
-                    b.HasOne("Models.Db.Tree.Desk", "Desk")
-                        .WithMany("SharedToRelation")
-                        .HasForeignKey("DeskId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Models.Db.Account.FunAccount", "FunAccount")
-                        .WithMany("SharedDesksRelation")
-                        .HasForeignKey("FunAccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Desk");
-
-                    b.Navigation("FunAccount");
-                });
-
             modelBuilder.Entity("Models.Db.Relations.FolderShare", b =>
                 {
                     b.HasOne("Models.Db.Tree.Folder", "Folder")
@@ -456,8 +424,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.Navigation("FiredActions");
 
-                    b.Navigation("SharedDesksRelation");
-
                     b.Navigation("SharedFoldersRelation");
 
                     b.Navigation("TokenSessions");
@@ -477,8 +443,6 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Cards");
 
                     b.Navigation("HistoryItems");
-
-                    b.Navigation("SharedToRelation");
                 });
 
             modelBuilder.Entity("Models.Db.Tree.Folder", b =>

@@ -40,7 +40,7 @@ namespace FunAPI.Areas.V1.Controllers
         [MapToApiVersion("1.0")]
         [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult> Remove(
-            [Required] [Id(typeof(CardConnection))]
+            [Required]
             long id
         )
         {

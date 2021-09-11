@@ -4,6 +4,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Models.Db.Account;
 using Models.Db.Common;
+using Models.Db.Relations;
 using Models.Db.Sessions;
 using Models.Db.Tree;
 
@@ -78,15 +79,6 @@ namespace Infrastructure.Core
 
             modelBuilder.Entity<TokenSession>().HasIndex(t => t.Token);
 
-            // modelBuilder.Entity<FunAccount>()
-            //     .HasMany(account => account.SharedFolders)
-            //     .WithMany(folder => folder.SharedTo)
-            //     .UsingEntity<FolderShare>(
-            //         opt1 => opt1.HasOne(rel => rel.Folder).WithMany(folder => folder.SharedToRelation),
-            //         opt2 => opt2.HasOne(rel => rel.FunAccount).WithMany(account => account.SharedFoldersRelation),
-            //         e => e.HasKey(rel => new {rel.FunAccount, rel.Folder})
-            //     );
-
             modelBuilder.Entity<Folder>()
                 .HasMany(f => f.Children)
                 .WithOne(f => f.Parent);
@@ -94,6 +86,28 @@ namespace Infrastructure.Core
             modelBuilder.Entity<Folder>()
                 .HasOne(f => f.AuthorAccount)
                 .WithMany(a => a.AuthoredFolders);
+
+            modelBuilder.Entity<Folder>()
+                .HasMany(f => f.SharedTo)
+                .WithMany(a => a.SharedFolders)
+                .UsingEntity<FolderShare>(
+                    opt1 => opt1.HasOne(rel => rel.FunAccount).WithMany(a => a.SharedFoldersRelation),
+                    opt2 => opt2.HasOne(rel => rel.Folder).WithMany(f => f.SharedToRelation),
+                    cfg => cfg.HasKey(s => new {s.FunAccountId, s.FolderId})
+                );
+            
+            modelBuilder.Entity<Desk>()
+                .HasOne(d => d.AuthorAccount)
+                .WithMany(a => a.AuthoredDesks);
+
+            modelBuilder.Entity<Desk>()
+                .HasMany(f => f.SharedTo)
+                .WithMany(a => a.SharedDesks)
+                .UsingEntity<DeskShare>(
+                    opt1 => opt1.HasOne(rel => rel.FunAccount).WithMany(a => a.SharedDesksRelation),
+                    opt2 => opt2.HasOne(rel => rel.Desk).WithMany(f => f.SharedToRelation),
+                    cfg => cfg.HasKey(s => new {s.FunAccountId, s.DeskId})
+                );
 
             modelBuilder.Entity<Card>()
                 .HasMany(c => c.AsLeftCards)

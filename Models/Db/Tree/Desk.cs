@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Models.Db.Account;
 using Models.Db.Common;
+using Models.Db.Relations;
 
 namespace Models.Db.Tree
 {
@@ -23,6 +24,9 @@ namespace Models.Db.Tree
         public long AuthorAccountId { get; set; }
 
         public virtual FunAccount AuthorAccount { get; set; }
+        
+        public virtual ICollection<FunAccount> SharedTo { get; set; }
+        public virtual ICollection<DeskShare> SharedToRelation { get; set; }
 
         public bool IsInTrashBin { get; set; }
 

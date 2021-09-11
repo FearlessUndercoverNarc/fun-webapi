@@ -24,6 +24,18 @@ namespace Infrastructure.Core.BaseImplementations
             await Context.SaveChangesAsync();
         }
 
+        public async Task RemoveMany(ICollection<T> entities)
+        {
+            GetDbSetT().RemoveRange(entities);
+            await Context.SaveChangesAsync();
+        }
+
+        public async Task AddMany(ICollection<T> entities)
+        {
+            GetDbSetT().AddRange(entities);
+            await Context.SaveChangesAsync();
+        }
+
         public async Task Add(T entity)
         {
             GetDbSetT().Add(entity);

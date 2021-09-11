@@ -49,6 +49,8 @@ namespace Services
             services.AddScoped<IDeskRepository, DeskRepository>();
             services.AddScoped<ICardRepository, CardRepository>();
             services.AddScoped<ICardConnectionRepository, CardConnectionRepository>();
+            services.AddScoped<IFolderShareRepository, FolderShareRepository>();
+            services.AddScoped<IDeskShareRepository, DeskShareRepository>();
 
             return services;
         }
