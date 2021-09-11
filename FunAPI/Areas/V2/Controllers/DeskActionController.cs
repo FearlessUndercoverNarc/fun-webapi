@@ -57,7 +57,7 @@ namespace FunAPI.Areas.V2.Controllers
                 }
                 catch (Exception e)
                 {
-                    await TelegramAPI.Send($"/v1/Desk/sse failed in OnDeskAction.\n{e.ToPrettyString()}");
+                    await TelegramAPI.Send($"/v2/Desk/sse failed in OnDeskAction.\n{e.ToPrettyString()}");
                 }
             }
 
@@ -69,9 +69,12 @@ namespace FunAPI.Areas.V2.Controllers
 
             if (int.TryParse(lastEventIdString, out var lastEventId))
             {
-                for (var i = lastEventId; i < _sseService.LastDeskActionIdMap[id]; i++)
+                if (_sseService.LastDeskActionIdMap.ContainsKey(id))
                 {
-                    OnDeskAction(id, i);
+                    for (var i = lastEventId; i < _sseService.LastDeskActionIdMap[id]; i++)
+                    {
+                        OnDeskAction(id, i);
+                    }
                 }
             }
 

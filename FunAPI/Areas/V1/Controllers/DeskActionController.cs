@@ -49,10 +49,10 @@ namespace FunAPI.Areas.V1.Controllers
             {
                 try
                 {
-                    var messageJson = JsonConvert.SerializeObject(new CreatedDto(id), _jsonSettings);
+                    var messageJson = JsonConvert.SerializeObject(new CreatedDto(eventId), _jsonSettings);
 
                     await Response.WriteAsync($"data: {messageJson}\n");
-                    await Response.WriteAsync($"id: {id}\n\n"); // NOTE: we have 2 '\n' because of SSE format
+                    await Response.WriteAsync($"id: {eventId}\n\n"); // NOTE: we have 2 '\n' because of SSE format
                     await Response.Body.FlushAsync();
                 }
                 catch (Exception e)
@@ -69,9 +69,12 @@ namespace FunAPI.Areas.V1.Controllers
 
             if (int.TryParse(lastEventIdString, out var lastEventId))
             {
-                for (var i = lastEventId; i < _sseService.LastDeskActionIdMap[id]; i++)
+                if (_sseService.LastDeskActionIdMap.ContainsKey(id))
                 {
-                    OnDeskAction(id, i);
+                    for (var i = lastEventId; i < _sseService.LastDeskActionIdMap[id]; i++)
+                    {
+                        OnDeskAction(id, i);
+                    }
                 }
             }
 

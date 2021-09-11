@@ -6,8 +6,13 @@ namespace Services.SharedServices.Implementations
 {
     public class SSEService : ISSEService
     {
+        public SSEService()
+        {
+            LastDeskActionIdMap = new();
+        }
+
         public event Action<long, long> DeskActionOccured;
-        
+
         public Dictionary<long, long> LastDeskActionIdMap { get; set; }
 
         public void EmitDeskActionOccured(long deskId, long eventId)
