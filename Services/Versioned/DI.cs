@@ -11,6 +11,8 @@ namespace Services.Versioned
         {
             services.AddScoped<IFolderServiceV1, FolderService>();
             services.AddScoped<IFolderServiceV2, FolderService>();
+            services.AddScoped<ITrashBinServiceV1, TrashBinService>();
+            services.AddScoped<ITrashBinServiceV2, TrashBinService>();
             services.AddScoped<IDeskServiceV1, DeskService>();
             services.AddScoped<IDeskServiceV2, DeskService>();
             services.AddScoped<ICardServiceV1, CardService>();

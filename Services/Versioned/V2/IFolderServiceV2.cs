@@ -15,16 +15,9 @@ namespace Services.Versioned.V2
         
         Task<ICollection<FolderWithIdDto>> GetSharedToMeRoots();
 
-        Task<ICollection<FolderWithIdDto>> GetMyTrashBin();
-
         Task<ICollection<FolderWithIdDto>> GetSubfoldersByFolder(long folderId);
 
         Task MoveToFolder(long folderId, long? destinationId);
 
-        Task MoveToTrashBin(long folderId);
-
-        Task RestoreFromTrashBin(long folderId);
-        
-        Task RemoveFromTrashBin(long id);
     }
 }

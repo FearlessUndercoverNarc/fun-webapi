@@ -19,6 +19,12 @@ namespace Infrastructure.Core.BaseImplementations
             GetDbSetT().Update(entity);
             await Context.SaveChangesAsync();
         }
+        
+        public async Task UpdateMany(ICollection<T> entities)
+        {
+            GetDbSetT().UpdateRange(entities);
+            await Context.SaveChangesAsync();
+        }
 
         public async Task Remove(T entity)
         {

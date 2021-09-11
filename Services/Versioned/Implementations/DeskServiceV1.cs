@@ -149,7 +149,7 @@ namespace Services.Versioned.Implementations
             var requestAccountId = _requestAccountIdService.Id;
 
             var desks = await _deskRepository.GetMany(
-                d => d.AuthorAccountId == requestAccountId && d.IsInTrashBin,
+                d => d.AuthorAccountId == requestAccountId && d.IsInTrashBin && !d.Parent.IsInTrashBin,
                 d => d.Parent,
                 d => d.AuthorAccount
             );
