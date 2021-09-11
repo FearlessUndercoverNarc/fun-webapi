@@ -11,22 +11,25 @@ using Models.Misc;
 using Services.External;
 using Services.SharedServices.Abstractions;
 using Services.Versioned.V1;
+using Services.Versioned.V2;
 
 namespace Services.Versioned.Implementations
 {
     public partial class FolderService : IFolderServiceV1
     {
         private IRequestAccountIdService _requestAccountIdService;
+        private IFolderShareRepository _folderShareRepository;
         private IFolderRepository _folderRepository;
         private IDeskRepository _deskRepository;
         private IMapper _mapper;
 
-        public FolderService(IFolderRepository folderRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IDeskRepository deskRepository)
+        public FolderService(IFolderRepository folderRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IDeskRepository deskRepository, IFolderShareRepository folderShareRepository)
         {
             _folderRepository = folderRepository;
             _mapper = mapper;
             _requestAccountIdService = requestAccountIdService;
             _deskRepository = deskRepository;
+            _folderShareRepository = folderShareRepository;
         }
 
         async Task<CreatedDto> IFolderServiceV1.Create(CreateFolderDto createFolderDto)
@@ -81,6 +84,22 @@ namespace Services.Versioned.Implementations
             var requestAccountId = _requestAccountIdService.Id;
             var folders = await _folderRepository.GetMany(
                 f => f.ParentId == null && f.AuthorAccountId == requestAccountId && !f.IsInTrashBin,
+                f => f.Desks.Where(d => !d.IsInTrashBin)
+            );
+
+            var folderWithIdDtos = _mapper.Map<ICollection<FolderWithIdDto>>(folders);
+
+            return folderWithIdDtos;
+        }
+
+        async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetSharedToMeRoot()
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+            
+            // GetSharedRoots is already awared of trashbin
+            var sharedRootIds = await _folderShareRepository.GetSharedRoots(requestAccountId);
+            var folders = await _folderRepository.GetMany(
+                f => sharedRootIds.Contains(f.Id),
                 f => f.Desks.Where(d => !d.IsInTrashBin)
             );
 

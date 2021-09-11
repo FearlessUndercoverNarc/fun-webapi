@@ -2,13 +2,20 @@
 using System.Threading.Tasks;
 using Infrastructure.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Models.DTOs.Desks;
+using Models.DTOs.Folders;
 using Services.SharedServices.Abstractions;
+using Services.Versioned.V1;
+using Services.Versioned.V2;
 
 namespace Seeder
 {
     public class SeedData
     {
         private IFunAccountService _funAccountService;
+        private IFolderServiceV2 _folderService;
+        private IDeskServiceV2 _deskService;
+        private IRequestAccountIdSetterService _requestAccountIdSetterService;
         private readonly IServiceScope _serviceScope;
 
         public SeedData(IServiceProvider provider)
@@ -16,6 +23,9 @@ namespace Seeder
             _serviceScope = provider.CreateScope();
             Context = _serviceScope.ServiceProvider.GetRequiredService<FunDbContext>();
             _funAccountService = _serviceScope.ServiceProvider.GetRequiredService<IFunAccountService>();
+            _folderService = _serviceScope.ServiceProvider.GetRequiredService<IFolderServiceV2>();
+            _deskService = _serviceScope.ServiceProvider.GetRequiredService<IDeskServiceV2>();
+            _requestAccountIdSetterService = _serviceScope.ServiceProvider.GetRequiredService<IRequestAccountIdSetterService>();
         }
 
         ~SeedData()
@@ -33,8 +43,23 @@ namespace Seeder
             Console.WriteLine("Database dropped and recreated");
 
             await _funAccountService.CreateFunAccount(new() {Login = "Admin", Password = "e3afed0047b08059d0fada10f400c1e5", Fio = "Admin Adminovich Adminov"});
-            await _funAccountService.CreateFunAccount(new() {Login = "Egop", Password = "Egop", Fio = "Egop Egopovich Egopov"});
+            long gpelId = await _funAccountService.CreateFunAccount(new() {Login = "Gpel", Password = "63214eb0e19eae2e0547d7c3891b6146", Fio = "Genych"});
+            await _funAccountService.CreateFunAccount(new() {Login = "Egop", Password = "27adc6b116ca4aea87cee80cfb838b9b", Fio = "Egop Egopovich Egopov"});
             Console.WriteLine("Seeded accounts");
+
+            _requestAccountIdSetterService.Set(gpelId, true);
+            long folderId = await _folderService.Create(new CreateFolderDto()
+            {
+                ParentId = null,
+                Title = "Test Folder"
+            });
+
+            long deskId = await _deskService.Create(new CreateDeskDto()
+            {
+                ParentId = folderId,
+                Title = "Test Desk",
+                Description = "There could be your ads."
+            });
         }
     }
 }

@@ -17,6 +17,8 @@ namespace Services.Versioned
             services.AddScoped<ICardServiceV2, CardService>();
             services.AddScoped<ICardConnectionServiceV1, CardConnectionService>();
             services.AddScoped<ICardConnectionServiceV2, CardConnectionService>();
+            services.AddScoped<IFolderShareServiceV1, FolderShareService>();
+            services.AddScoped<IFolderShareServiceV2, FolderShareService>();
             return services;
         }
     }

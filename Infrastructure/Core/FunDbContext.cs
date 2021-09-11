@@ -4,6 +4,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Models.Db.Account;
 using Models.Db.Common;
+using Models.Db.Relations;
 using Models.Db.Sessions;
 using Models.Db.Tree;
 
@@ -94,6 +95,15 @@ namespace Infrastructure.Core
             modelBuilder.Entity<Folder>()
                 .HasOne(f => f.AuthorAccount)
                 .WithMany(a => a.AuthoredFolders);
+
+            modelBuilder.Entity<Folder>()
+                .HasMany(f => f.SharedTo)
+                .WithMany(a => a.SharedFolders)
+                .UsingEntity<FolderShare>(
+                    opt1 => opt1.HasOne(rel => rel.FunAccount).WithMany(a => a.SharedFoldersRelation),
+                    opt2 => opt2.HasOne(rel => rel.Folder).WithMany(f => f.SharedToRelation),
+                    cfg => cfg.HasKey(s => new {s.FunAccountId, s.FolderId})
+                );
 
             modelBuilder.Entity<Card>()
                 .HasMany(c => c.AsLeftCards)

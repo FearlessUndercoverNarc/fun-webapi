@@ -9,10 +9,10 @@ namespace Models.Db.Relations
         [ForeignKey(nameof(FunAccount))]
         public long FunAccountId { get; set; }
 
+        public virtual FunAccount FunAccount { get; set; }
+
         [ForeignKey(nameof(Folder))]
         public long FolderId { get; set; }
-
-        public virtual FunAccount FunAccount { get; set; }
 
         public virtual Folder Folder { get; set; }
     }

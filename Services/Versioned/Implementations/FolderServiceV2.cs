@@ -73,6 +73,22 @@ namespace Services.Versioned.Implementations
             return folderWithIdDtos;
         }
 
+        async Task<ICollection<FolderWithIdDto>> IFolderServiceV2.GetSharedToMeRoot()
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+
+            // GetSharedRoots is already awared of trashbin
+            var sharedRootIds = await _folderShareRepository.GetSharedRoots(requestAccountId);
+            var folders = await _folderRepository.GetMany(
+                f => sharedRootIds.Contains(f.Id),
+                f => f.Desks.Where(d => !d.IsInTrashBin)
+            );
+
+            var folderWithIdDtos = _mapper.Map<ICollection<FolderWithIdDto>>(folders);
+
+            return folderWithIdDtos;
+        }
+
         async Task<ICollection<FolderWithIdDto>> IFolderServiceV2.GetSubfoldersByFolder(long id)
         {
             var parentFolder = await _folderRepository.GetById(
@@ -117,7 +133,7 @@ namespace Services.Versioned.Implementations
                 throw new FunException("Этот элемент уже в корзине");
             }
 
-            
+
             folder.IsInTrashBin = true;
             foreach (var desk in folder.Desks)
             {
@@ -193,7 +209,7 @@ namespace Services.Versioned.Implementations
             }
 
             // HACK: we really need to delete only the first descendants, because the others aren't ever visible to user
-            
+
             foreach (var desk in folder.Desks)
             {
                 desk.LastUpdatedAt = DateTime.Now;
