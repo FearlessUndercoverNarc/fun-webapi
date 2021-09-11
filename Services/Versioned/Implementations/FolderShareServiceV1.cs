@@ -15,20 +15,26 @@ namespace Services.Versioned.Implementations
     {
         private IFolderRepository _folderRepository;
         private IFolderShareRepository _folderShareRepository;
+        private IDeskRepository _deskRepository;
         private IDeskShareRepository _deskShareRepository;
         private IRequestAccountIdService _requestAccountIdService;
 
-        public FolderShareService(IFolderRepository folderRepository, IFolderShareRepository folderShareRepository, IRequestAccountIdService requestAccountIdService, IDeskShareRepository deskShareRepository)
+        public FolderShareService(IFolderRepository folderRepository, IFolderShareRepository folderShareRepository, IRequestAccountIdService requestAccountIdService, IDeskShareRepository deskShareRepository, IDeskRepository deskRepository)
         {
             _folderRepository = folderRepository;
             _folderShareRepository = folderShareRepository;
             _requestAccountIdService = requestAccountIdService;
             _deskShareRepository = deskShareRepository;
+            _deskRepository = deskRepository;
         }
 
         private async Task AggregateUnshared(long id, long recipientId, List<long> folders, List<long> desks)
         {
-            var folder = await _folderRepository.GetById(id, f => f.Children);
+            var folder = await _folderRepository.GetById(
+                id,
+                f => f.Children,
+                f => f.Desks
+            );
 
             if (!await _folderShareRepository.IsSharedTo(id, recipientId))
             {
@@ -40,13 +46,24 @@ namespace Services.Versioned.Implementations
             {
                 await AggregateUnshared(child.Id, recipientId, folders, desks);
             }
+
+            foreach (var desk in folder.Desks)
+            {
+                if (!await _deskShareRepository.IsSharedTo(desk.Id, recipientId))
+                {
+                    desks.Add(desk.Id);
+                }
+            }
         }
 
-        private async Task AggregateSharedFolders(long id, long recipientId, List<long> folders, List<long> desks)
+        private async Task AggregateShared(long id, long recipientId, List<long> folders, List<long> desks)
         {
-            var folder = await _folderRepository.GetById(id, f => f.Children);
+            var folder = await _folderRepository.GetById(
+                id,
+                f => f.Children,
+                f => f.Desks
+            );
 
-            // ReSharper disable once SimplifyLinqExpressionUseAll
             if (await _folderShareRepository.IsSharedTo(id, recipientId))
             {
                 // this folder is shared to this user
@@ -55,7 +72,15 @@ namespace Services.Versioned.Implementations
 
             foreach (var child in folder.Children)
             {
-                await AggregateSharedFolders(child.Id, recipientId, folders, desks);
+                await AggregateShared(child.Id, recipientId, folders, desks);
+            }
+
+            foreach (var desk in folder.Desks)
+            {
+                if (await _deskShareRepository.IsSharedTo(desk.Id, recipientId))
+                {
+                    desks.Add(desk.Id);
+                }
             }
         }
 
@@ -112,7 +137,7 @@ namespace Services.Versioned.Implementations
 
             List<long> folders = new();
             List<long> desks = new();
-            await AggregateSharedFolders(id, recipientId, folders, desks);
+            await AggregateShared(id, recipientId, folders, desks);
 
             var folderSharingErrorsStringBuilder = new StringBuilder();
             List<FolderShare> folderShares = new();
@@ -133,8 +158,9 @@ namespace Services.Versioned.Implementations
             if (folderSharingErrorsStringBuilder.Length != 0)
             {
                 await TelegramAPI.Send($"IFolderShareServiceV1.RemoveShare:\nAn inner error has occured while removing share!\n{folderSharingErrorsStringBuilder}");
+                throw new FunException("Произошла ошибка при удалении доступа к папке! Обработка была прервана. Разработчики уже уведомлены.");
             }
-            
+
             var deskSharingErrorsStringBuilder = new StringBuilder();
             List<DeskShare> deskShares = new();
 
@@ -154,6 +180,7 @@ namespace Services.Versioned.Implementations
             if (folderSharingErrorsStringBuilder.Length != 0)
             {
                 await TelegramAPI.Send($"IFolderShareServiceV1.RemoveShare:\nAn inner error has occured while removing share!\n{folderSharingErrorsStringBuilder}");
+                throw new FunException("Произошла ошибка при удалении доступа к доске! Обработка была прервана. Разработчики уже уведомлены.");
             }
 
             await _folderShareRepository.RemoveMany(folderShares);

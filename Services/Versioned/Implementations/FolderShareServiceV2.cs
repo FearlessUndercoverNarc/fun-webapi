@@ -63,7 +63,7 @@ namespace Services.Versioned.Implementations
 
             List<long> folders = new();
             List<long> desks = new();
-            await AggregateSharedFolders(id, recipientId, folders, desks);
+            await AggregateShared(id, recipientId, folders, desks);
 
             var folderSharingErrorsStringBuilder = new StringBuilder();
             List<FolderShare> folderShares = new();
