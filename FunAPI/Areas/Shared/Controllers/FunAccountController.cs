@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using FunAPI.Filters;
@@ -87,6 +88,15 @@ namespace FunAPI.Areas.Shared.Controllers
             await _tokenSessionService.Logout(token);
 
             return Ok();
+        }
+
+        [HttpGet]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<ICollection<FunAccountWithIdDto>>> GetAll()
+        {
+            var funAccountWithIdDtos = await _funAccountService.GetAll();
+
+            return Ok(funAccountWithIdDtos);
         }
     }
 }
