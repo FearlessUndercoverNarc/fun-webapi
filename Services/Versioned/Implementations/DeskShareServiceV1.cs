@@ -12,27 +12,35 @@ namespace Services.Versioned.Implementations
     public partial class DeskShareService : IDeskShareServiceV1
     {
         private IFolderRepository _folderRepository;
+        private IFolderShareRepository _folderShareRepository;
         private IDeskRepository _deskRepository;
         private IDeskShareRepository _deskShareRepository;
         private IRequestAccountIdService _requestAccountIdService;
 
-        public DeskShareService(IFolderRepository folderRepository, IDeskRepository deskRepository, IDeskShareRepository deskShareRepository, IRequestAccountIdService requestAccountIdService)
+        public DeskShareService(IFolderRepository folderRepository, IDeskRepository deskRepository, IDeskShareRepository deskShareRepository, IRequestAccountIdService requestAccountIdService, IFolderShareRepository folderShareRepository)
         {
             _folderRepository = folderRepository;
             _deskRepository = deskRepository;
             _deskShareRepository = deskShareRepository;
             _requestAccountIdService = requestAccountIdService;
+            _folderShareRepository = folderShareRepository;
         }
 
         async Task IDeskShareServiceV1.Share(long id, long recipientId)
         {
             var requestAccountId = _requestAccountIdService.Id;
             var desk = await _deskRepository.GetById(id);
-
+            
             if (desk.AuthorAccountId != requestAccountId)
             {
                 await TelegramAPI.Send($"IDeskShareServiceV1.Share:\nAttempt to access restricted desk!\nDeskId ({id})\nUser ({_requestAccountIdService.Id})");
                 throw new FunException("Вы не можете управлять доступом к этой доске, так как не являетесь её владельцем.");
+            }
+
+            if (await _folderShareRepository.IsSharedTo(desk.ParentId, requestAccountId))
+            {
+                await TelegramAPI.Send($"IDeskShareServiceV1.Share:\nAttempt to share a desk in a shared folder!\nDeskId ({id})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Папка с этой доской уже доступна этому пользователю"); 
             }
 
             if (await _deskShareRepository.IsSharedTo(id, recipientId))

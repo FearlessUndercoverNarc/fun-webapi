@@ -17,21 +17,29 @@ namespace Services.Versioned.Implementations
 
             if (shareRoot.AuthorAccountId != requestAccountId)
             {
-                await TelegramAPI.Send($"IFolderShareServiceV2.Share:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderShareServiceV1.Share:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
                 throw new FunException("Вы не можете управлять доступом к этой папке, так как не являетесь её владельцем.");
             }
 
             List<long> folders = new();
-            await AggregateUnsharedFolders(id, recipientId, folders);
+            List<long> desks = new();
+            await AggregateUnshared(id, recipientId, folders, desks);
 
-            List<FolderShare> shares = new List<FolderShare>(folders.Count);
+            List<FolderShare> folderShares = new List<FolderShare>(folders.Count);
+            List<DeskShare> deskShares = new List<DeskShare>(desks.Count);
 
             foreach (var folder in folders)
             {
-                shares.Add(new FolderShare() {FolderId = folder, FunAccountId = recipientId});
+                folderShares.Add(new FolderShare() {FolderId = folder, FunAccountId = recipientId});
             }
 
-            await _folderShareRepository.AddMany(shares);
+            foreach (var desk in desks)
+            {
+                deskShares.Add(new DeskShare() {DeskId = desk, FunAccountId = recipientId});
+            }
+
+            await _folderShareRepository.AddMany(folderShares);
+            await _deskShareRepository.AddMany(deskShares);
         }
 
         async Task IFolderShareServiceV2.RemoveShare(long id, long recipientId)
@@ -41,7 +49,7 @@ namespace Services.Versioned.Implementations
 
             if (shareRoot.AuthorAccountId != requestAccountId)
             {
-                await TelegramAPI.Send($"IFolderShareServiceV2.RemoveShare:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderShareServiceV1.RemoveShare:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
                 throw new FunException("Вы не можете управлять доступом к этой папке, так как не являетесь её владельцем.");
             }
 
@@ -54,10 +62,11 @@ namespace Services.Versioned.Implementations
             }
 
             List<long> folders = new();
-            await AggregateSharedFolders(id, recipientId, folders);
+            List<long> desks = new();
+            await AggregateSharedFolders(id, recipientId, folders, desks);
 
-            var errorsStringBuilder = new StringBuilder();
-            List<FolderShare> shares = new();
+            var folderSharingErrorsStringBuilder = new StringBuilder();
+            List<FolderShare> folderShares = new();
 
             foreach (var folder in folders)
             {
@@ -65,19 +74,41 @@ namespace Services.Versioned.Implementations
 
                 if (folderShare == null)
                 {
-                    errorsStringBuilder.AppendLine($"FolderShare not found for subfolder ({folder}) and Account ({recipientId})");
+                    folderSharingErrorsStringBuilder.AppendLine($"FolderShare not found for subfolder ({folder}) and Account ({recipientId})");
                     continue;
                 }
 
-                shares.Add(folderShare);
+                folderShares.Add(folderShare);
             }
 
-            if (errorsStringBuilder.Length != 0)
+            if (folderSharingErrorsStringBuilder.Length != 0)
             {
-                await TelegramAPI.Send($"IFolderShareServiceV2.RemoveShare:\nAn inner error has occured while removing share!\n{errorsStringBuilder}");
+                await TelegramAPI.Send($"IFolderShareServiceV1.RemoveShare:\nAn inner error has occured while removing share!\n{folderSharingErrorsStringBuilder}");
+            }
+            
+            var deskSharingErrorsStringBuilder = new StringBuilder();
+            List<DeskShare> deskShares = new();
+
+            foreach (var desk in desks)
+            {
+                var deskShare = await _deskShareRepository.GetOne(s => s.DeskId == desk && s.FunAccountId == recipientId);
+
+                if (deskShare == null)
+                {
+                    deskSharingErrorsStringBuilder.AppendLine($"DeskShare not found for desk ({desk}) and Account ({recipientId})");
+                    continue;
+                }
+
+                deskShares.Add(deskShare);
             }
 
-            await _folderShareRepository.RemoveMany(shares);
+            if (folderSharingErrorsStringBuilder.Length != 0)
+            {
+                await TelegramAPI.Send($"IFolderShareServiceV1.RemoveShare:\nAn inner error has occured while removing share!\n{folderSharingErrorsStringBuilder}");
+            }
+
+            await _folderShareRepository.RemoveMany(folderShares);
+            await _deskShareRepository.RemoveMany(deskShares);
         }
     }
 }

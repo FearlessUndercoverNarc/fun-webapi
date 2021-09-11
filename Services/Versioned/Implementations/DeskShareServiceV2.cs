@@ -19,6 +19,12 @@ namespace Services.Versioned.Implementations
                 throw new FunException("Вы не можете управлять доступом к этой доске, так как не являетесь её владельцем.");
             }
 
+            if (await _folderShareRepository.IsSharedTo(desk.ParentId, requestAccountId))
+            {
+                await TelegramAPI.Send($"IDeskShareServiceV1.Share:\nAttempt to share a desk in a shared folder!\nDeskId ({id})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Папка с этой доской уже доступна этому пользователю"); 
+            }
+
             if (await _deskShareRepository.IsSharedTo(id, recipientId))
             {
                 await TelegramAPI.Send($"IDeskShareServiceV1.Share:\nAttempt to share already shared desk!\nDeskId ({id})\nUser ({_requestAccountIdService.Id})");
