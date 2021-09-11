@@ -6,7 +6,7 @@ namespace Infrastructure.Abstractions
 {
     using T = DeskActionHistoryItem;
 
-    public interface IDeskActionHistoryRepository : IAdd<T>, IUpdate<T>, IRemove<T>, IGetMany<T>, IGetOne<T>, IGetLastVersion<T>
+    public interface IDeskActionHistoryRepository : IAdd<T>, IUpdate<T>, IRemove<T>, IGetMany<T>, IGetOne<T>, IGetLastVersion<T>, IGetById<T>
     {
         Task<uint> GetLastVersionByDesk(long deskId);
     }

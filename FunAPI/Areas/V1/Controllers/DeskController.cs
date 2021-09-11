@@ -1,12 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using FunAPI.Filters;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Models.Attributes;
 using Models.Db.Tree;
 using Models.DTOs.Desks;
 using Models.DTOs.Misc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using Services;
+using Services.External;
+using Services.SharedServices.Abstractions;
 using Services.Versioned.V1;
 
 namespace FunAPI.Areas.V1.Controllers
@@ -19,7 +26,7 @@ namespace FunAPI.Areas.V1.Controllers
     {
         private IDeskServiceV1 _deskService;
 
-        public DeskController(IDeskServiceV1 deskService)
+        public DeskController(IDeskServiceV1 deskService, ISSEService sseService)
         {
             _deskService = deskService;
         }
@@ -58,7 +65,7 @@ namespace FunAPI.Areas.V1.Controllers
 
             return Ok(deskWithIdDtos);
         }
-        
+
         [HttpGet]
         [MapToApiVersion("1.0")]
         [TypeFilter(typeof(AuthTokenFilter))]

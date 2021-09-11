@@ -2,6 +2,7 @@ using AutoMapper;
 using Models.Db.Account;
 using Models.Db.Relations;
 using Models.Db.Tree;
+using Models.DTOs;
 using Models.DTOs.CardConnections;
 using Models.DTOs.Cards;
 using Models.DTOs.Desks;
@@ -65,6 +66,9 @@ namespace Services.AutoMapperProfiles
             CreateMap<FolderShare, FolderShareDto>()
                 .ReverseMap();
             CreateMap<DeskShare, DeskShareDto>()
+                .ReverseMap();
+
+            CreateMap<DeskActionHistoryItem, DeskActionDto>()
                 .ReverseMap();
         }
     }

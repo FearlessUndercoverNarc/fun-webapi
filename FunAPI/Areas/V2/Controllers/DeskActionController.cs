@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using FunAPI.Filters;
@@ -7,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Models.Attributes;
 using Models.Db.Tree;
-using Models.DTOs.Desks;
+using Models.DTOs;
 using Models.DTOs.Misc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -21,23 +20,23 @@ namespace FunAPI.Areas.V2.Controllers
     [Route("/v2/[controller]/[action]")]
     [ValidateModelFilter]
     [ResponseCache(NoStore = true, Duration = 0)]
-    [ApiVersion("1.0")]
     [ApiVersion("2.0")]
-    public class DeskController : Controller
+    public class DeskActionController : Controller
     {
-        private IDeskServiceV2 _deskService;
-        private readonly JsonSerializerSettings _jsonSettings;
         private ISSEService _sseService;
+        private IDeskActionServiceV2 _deskActionService;
+        private readonly JsonSerializerSettings _jsonSettings;
 
-        public DeskController(IDeskServiceV2 deskService, ISSEService sseService)
+        public DeskActionController(ISSEService sseService, IDeskActionServiceV2 deskActionService)
         {
-            _deskService = deskService;
             _sseService = sseService;
+            _deskActionService = deskActionService;
             _jsonSettings = new JsonSerializerSettings {ContractResolver = new CamelCasePropertyNamesContractResolver()};
         }
+
         // Note: JS EventSource doesn't support custom headers, so disable AuthTokenFilter here 
         [HttpGet]
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         //[TypeFilter(typeof(AuthTokenFilter))]
         public void Sse(
             [Required] [Id(typeof(Desk))] long id
@@ -82,75 +81,32 @@ namespace FunAPI.Areas.V2.Controllers
 
             // _logger.LogInformation("SSE disconnected");
         }
-        
-        [HttpPost]
+
+
+        [HttpGet]
         [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult<CreatedDto>> Create(
-            [FromBody] CreateDeskDto createDeskDto
+        public async Task<ActionResult<DeskActionDto>> GetById(
+            [Required] [Id(typeof(DeskActionHistoryItem))]
+            long id
         )
         {
-            var createdDto = await _deskService.Create(createDeskDto);
+            var deskActionDto = await _deskActionService.GetById(id);
 
-            return Ok(createdDto);
-        }
-
-        [HttpPost]
-        [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult> Update(
-            [FromBody] UpdateDeskDto updateDeskDto
-        )
-        {
-            await _deskService.Update(updateDeskDto);
-            return Ok();
+            return deskActionDto;
         }
 
         [HttpGet]
         [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetByFolder(
-            [Required] [Id(typeof(Folder))] long id
+        public async Task<ActionResult<DeskActionDto>> GetAllByDesk(
+            [Required] [Id(typeof(Desk))]
+            long id
         )
         {
-            var deskWithIdDtos = await _deskService.GetByFolder(id);
+            var deskActionDtos = await _deskActionService.GetAllByDesk(id);
 
-            return Ok(deskWithIdDtos);
-        }
-        
-        [HttpGet]
-        [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetSharedToMe()
-        {
-            var deskWithIdDtos = await _deskService.GetSharedToMe();
-
-            return Ok(deskWithIdDtos);
-        }
-
-        [HttpGet]
-        [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetById(
-            [Required] [Id(typeof(Desk))] long id
-        )
-        {
-            var deskWithIdDto = await _deskService.GetById(id);
-
-            return Ok(deskWithIdDto);
-        }
-
-        [HttpGet]
-        [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult> MoveToFolder(
-            [Required] [Id(typeof(Desk))] long id,
-            [Required] [Id(typeof(Folder))] long destinationId
-        )
-        {
-            await _deskService.MoveToFolder(id, destinationId);
-
-            return Ok();
+            return Ok(deskActionDtos);
         }
     }
 }
