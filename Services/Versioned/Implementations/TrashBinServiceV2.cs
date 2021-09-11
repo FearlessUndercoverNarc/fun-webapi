@@ -15,7 +15,7 @@ namespace Services.Versioned.Implementations
         {
             var requestAccountId = _requestAccountIdService.Id;
             var folders = await _folderRepository.GetMany(
-                f => f.AuthorAccountId == requestAccountId && f.IsInTrashBin && !f.Parent.IsInTrashBin,
+                f => f.AuthorAccountId == requestAccountId && f.IsInTrashBin && (f.ParentId == null || !f.Parent.IsInTrashBin),
                 f => f.Desks
             );
 
