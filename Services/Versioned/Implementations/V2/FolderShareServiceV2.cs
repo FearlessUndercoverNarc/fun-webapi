@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 using Models.Db.Relations;
+using Models.DTOs.Relations;
 using Models.Misc;
 using Services.External;
 using Services.Versioned.V2;
@@ -10,7 +11,7 @@ namespace Services.Versioned.Implementations
 {
     public partial class FolderShareService : IFolderShareServiceV2
     {
-        async Task IFolderShareServiceV2.Share(long id, long recipientId)
+        async Task IFolderShareServiceV2.Share(long id, long recipientId, bool hasWriteAccess)
         {
             var requestAccountId = _requestAccountIdService.Id;
             var shareRoot = await _folderRepository.GetById(id);
@@ -30,16 +31,43 @@ namespace Services.Versioned.Implementations
 
             foreach (var folder in folders)
             {
-                folderShares.Add(new FolderShare() {FolderId = folder, FunAccountId = recipientId});
+                folderShares.Add(new FolderShare()
+                {
+                    FolderId = folder, 
+                    FunAccountId = recipientId,
+                    HasWriteAccess = hasWriteAccess
+                });
             }
 
             foreach (var desk in desks)
             {
-                deskShares.Add(new DeskShare() {DeskId = desk, FunAccountId = recipientId});
+                deskShares.Add(new DeskShare()
+                {
+                    DeskId = desk, 
+                    FunAccountId = recipientId,
+                    HasWriteAccess = hasWriteAccess
+                });
             }
 
             await _folderShareRepository.AddMany(folderShares);
             await _deskShareRepository.AddMany(deskShares);
+        }
+
+        async Task<ICollection<FolderShareDto>> IFolderShareServiceV2.GetShares(long id)
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+            var desk = await _deskRepository.GetById(id);
+
+            if (desk.AuthorAccountId != requestAccountId)
+            {
+                await TelegramAPI.Send($"IFolderShareServiceV1.GetShares:\nAttempt to access restricted folder!\nDeskId ({id})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Вы не можете просматривать информацию о доступе к этому ресурсу, так как не являетесь его владельцем.");
+            }
+
+            var folderShares = await _folderShareRepository.GetShares(id);
+
+            var folderShareDtos = _mapper.Map<ICollection<FolderShareDto>>(folderShares);
+            return folderShareDtos;
         }
 
         async Task IFolderShareServiceV2.RemoveShare(long id, long recipientId)

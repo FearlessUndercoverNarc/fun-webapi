@@ -66,7 +66,7 @@ namespace Services.Versioned.Implementations
 
             foreach (var child in folder.Children)
             {
-                await AggregateNonTrashed(child.Id, folders, desks);
+                await AggregateTrashed(child.Id, folders, desks);
             }
 
             desks.AddRange(from desk in folder.Desks where desk.IsInTrashBin select desk.Id);
@@ -92,6 +92,7 @@ namespace Services.Versioned.Implementations
                 f => f.Desks.Where(d => !d.IsInTrashBin)
             );
 
+            // TODO: Allow to trash folder when we have shared access
             var requestAccountId = _requestAccountIdService.Id;
             if (folder.AuthorAccountId != requestAccountId)
             {

@@ -14,6 +14,9 @@ namespace Services.SharedServices
             
             services.AddScoped<ITokenSessionService, TokenSessionService>();
             services.AddScoped<IFunAccountService, FunAccountService>();
+
+            services.AddSingleton<ISSEService, SSEService>();
+            
             return services;
         }
     }

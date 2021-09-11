@@ -15,16 +15,29 @@ namespace Infrastructure.Implementations
         {
         }
 
-        public async Task<bool> IsSharedTo(long id, long recipientId)
+        public async Task<bool> HasSharedWriteTo(long id, long recipientId)
+        {
+            return await GetDbSetT().FirstOrDefaultAsync(s => s.DeskId == id && s.FunAccountId == recipientId && s.HasWriteAccess) != null;
+        }
+
+        public async Task<bool> HasSharedReadTo(long id, long recipientId)
         {
             return await GetDbSetT().FirstOrDefaultAsync(s => s.DeskId == id && s.FunAccountId == recipientId) != null;
+        }
+
+        public async Task<ICollection<DeskShare>> GetShares(long id)
+        {
+            return await GetDbSetT()
+                .Where(e => e.DeskId == id)
+                .Include(e => e.FunAccount)
+                .ToListAsync();
         }
 
         public async Task<ICollection<long>> GetIndividuallyShared(long accountId)
         {
             return await GetDbSetT()
                 .Where(s =>
-                    s.FunAccountId == accountId && 
+                    s.FunAccountId == accountId &&
                     s.Desk.Parent.SharedToRelation.All(sh => sh.FunAccountId != accountId) &&
                     !s.Desk.IsInTrashBin
                 )

@@ -9,7 +9,11 @@ namespace Infrastructure.Abstractions
 
     public interface IFolderShareRepository : IAdd<T>, IGetOne<T>, IAddMany<T>, IRemoveMany<T>
     {
-        Task<bool> IsSharedTo(long id, long recipientId);
+        Task<bool> HasSharedWriteTo(long id, long recipientId);
+
+        Task<bool> HasSharedReadTo(long id, long recipientId);
+
+        Task<ICollection<T>> GetShares(long id);
 
         Task<ICollection<long>> GetSharedRoots(long accountId);
     }

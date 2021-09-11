@@ -83,7 +83,7 @@ namespace Seeder
                 });
             }
 
-            await _deskShareService.Share(deskId, adminId);
+            await _deskShareService.Share(deskId, adminId, true);
         }
     }
 }

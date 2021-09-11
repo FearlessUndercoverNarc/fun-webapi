@@ -3,15 +3,17 @@ using System;
 using Infrastructure.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(FunDbContext))]
-    partial class FunDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210911195835_FixCardConnectionId")]
+    partial class FixCardConnectionId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,9 +61,6 @@ namespace Infrastructure.Data.Migrations
                     b.Property<long>("DeskId")
                         .HasColumnType("bigint");
 
-                    b.Property<bool>("HasWriteAccess")
-                        .HasColumnType("boolean");
-
                     b.HasKey("FunAccountId", "DeskId");
 
                     b.HasIndex("DeskId");
@@ -76,9 +75,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.Property<long>("FolderId")
                         .HasColumnType("bigint");
-
-                    b.Property<bool>("HasWriteAccess")
-                        .HasColumnType("boolean");
 
                     b.HasKey("FunAccountId", "FolderId");
 

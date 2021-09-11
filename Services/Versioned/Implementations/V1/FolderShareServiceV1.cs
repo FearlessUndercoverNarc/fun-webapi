@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using AutoMapper;
 using Infrastructure.Abstractions;
 using Models.Db.Relations;
-using Models.Db.Tree;
+using Models.DTOs.Relations;
 using Models.Misc;
 using Services.External;
 using Services.SharedServices.Abstractions;
@@ -18,14 +19,16 @@ namespace Services.Versioned.Implementations
         private IDeskRepository _deskRepository;
         private IDeskShareRepository _deskShareRepository;
         private IRequestAccountIdService _requestAccountIdService;
+        private IMapper _mapper;
 
-        public FolderShareService(IFolderRepository folderRepository, IFolderShareRepository folderShareRepository, IRequestAccountIdService requestAccountIdService, IDeskShareRepository deskShareRepository, IDeskRepository deskRepository)
+        public FolderShareService(IFolderRepository folderRepository, IFolderShareRepository folderShareRepository, IRequestAccountIdService requestAccountIdService, IDeskShareRepository deskShareRepository, IDeskRepository deskRepository, IMapper mapper)
         {
             _folderRepository = folderRepository;
             _folderShareRepository = folderShareRepository;
             _requestAccountIdService = requestAccountIdService;
             _deskShareRepository = deskShareRepository;
             _deskRepository = deskRepository;
+            _mapper = mapper;
         }
 
         private async Task AggregateUnshared(long id, long recipientId, List<long> folders, List<long> desks)
@@ -36,7 +39,7 @@ namespace Services.Versioned.Implementations
                 f => f.Desks
             );
 
-            if (!await _folderShareRepository.IsSharedTo(id, recipientId))
+            if (!await _folderShareRepository.HasSharedReadTo(id, recipientId))
             {
                 // this folder is not shared to this user
                 folders.Add(id);
@@ -49,7 +52,7 @@ namespace Services.Versioned.Implementations
 
             foreach (var desk in folder.Desks)
             {
-                if (!await _deskShareRepository.IsSharedTo(desk.Id, recipientId))
+                if (!await _deskShareRepository.HasSharedReadTo(desk.Id, recipientId))
                 {
                     desks.Add(desk.Id);
                 }
@@ -64,7 +67,7 @@ namespace Services.Versioned.Implementations
                 f => f.Desks
             );
 
-            if (await _folderShareRepository.IsSharedTo(id, recipientId))
+            if (await _folderShareRepository.HasSharedReadTo(id, recipientId))
             {
                 // this folder is shared to this user
                 folders.Add(id);
@@ -77,14 +80,14 @@ namespace Services.Versioned.Implementations
 
             foreach (var desk in folder.Desks)
             {
-                if (await _deskShareRepository.IsSharedTo(desk.Id, recipientId))
+                if (await _deskShareRepository.HasSharedReadTo(desk.Id, recipientId))
                 {
                     desks.Add(desk.Id);
                 }
             }
         }
 
-        async Task IFolderShareServiceV1.Share(long id, long recipientId)
+        async Task IFolderShareServiceV1.Share(long id, long recipientId, bool hasWriteAccess)
         {
             var requestAccountId = _requestAccountIdService.Id;
             var shareRoot = await _folderRepository.GetById(id);
@@ -104,16 +107,43 @@ namespace Services.Versioned.Implementations
 
             foreach (var folder in folders)
             {
-                folderShares.Add(new FolderShare() {FolderId = folder, FunAccountId = recipientId});
+                folderShares.Add(new FolderShare()
+                {
+                    FolderId = folder, 
+                    FunAccountId = recipientId,
+                    HasWriteAccess = hasWriteAccess
+                });
             }
 
             foreach (var desk in desks)
             {
-                deskShares.Add(new DeskShare() {DeskId = desk, FunAccountId = recipientId});
+                deskShares.Add(new DeskShare()
+                {
+                    DeskId = desk, 
+                    FunAccountId = recipientId,
+                    HasWriteAccess = hasWriteAccess
+                });
             }
 
             await _folderShareRepository.AddMany(folderShares);
             await _deskShareRepository.AddMany(deskShares);
+        }
+
+        async Task<ICollection<FolderShareDto>> IFolderShareServiceV1.GetShares(long id)
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+            var desk = await _deskRepository.GetById(id);
+
+            if (desk.AuthorAccountId != requestAccountId)
+            {
+                await TelegramAPI.Send($"IFolderShareServiceV1.GetShares:\nAttempt to access restricted folder!\nDeskId ({id})\nUser ({_requestAccountIdService.Id})");
+                throw new FunException("Вы не можете просматривать информацию о доступе к этому ресурсу, так как не являетесь его владельцем.");
+            }
+
+            var folderShares = await _folderShareRepository.GetShares(id);
+
+            var folderShareDtos = _mapper.Map<ICollection<FolderShareDto>>(folderShares);
+            return folderShareDtos;
         }
 
         async Task IFolderShareServiceV1.RemoveShare(long id, long recipientId)

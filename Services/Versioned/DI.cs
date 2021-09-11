@@ -25,6 +25,8 @@ namespace Services.Versioned
             services.AddScoped<IFolderShareServiceV2, FolderShareService>();
             services.AddScoped<IDeskShareServiceV1, DeskShareService>();
             services.AddScoped<IDeskShareServiceV2, DeskShareService>();
+            services.AddScoped<IDeskActionServiceV1, DeskActionService>();
+            services.AddScoped<IDeskActionServiceV2, DeskActionService>();
             return services;
         }
     }

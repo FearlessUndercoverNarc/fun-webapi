@@ -31,6 +31,7 @@ namespace Services.Versioned.Implementations
                 f => f.Desks.Where(d => !d.IsInTrashBin)
             );
 
+            // TODO: Allow to trash folder when we have shared access
             var requestAccountId = _requestAccountIdService.Id;
             if (folder.AuthorAccountId != requestAccountId)
             {

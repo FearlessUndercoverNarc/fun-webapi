@@ -1,12 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using FunAPI.Filters;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Models.Attributes;
 using Models.Db.Tree;
 using Models.DTOs.Desks;
 using Models.DTOs.Misc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using Services;
+using Services.External;
+using Services.SharedServices.Abstractions;
 using Services.Versioned.V2;
 
 namespace FunAPI.Areas.V2.Controllers
@@ -20,11 +27,11 @@ namespace FunAPI.Areas.V2.Controllers
     {
         private IDeskServiceV2 _deskService;
 
-        public DeskController(IDeskServiceV2 deskService)
+        public DeskController(IDeskServiceV2 deskService, ISSEService sseService)
         {
             _deskService = deskService;
         }
-
+        
         [HttpPost]
         [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
@@ -46,17 +53,6 @@ namespace FunAPI.Areas.V2.Controllers
         {
             await _deskService.Update(updateDeskDto);
             return Ok();
-        }
-
-        [HttpGet]
-        [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetMyTrashBin()
-        {
-            var deskWithIdDtos = await _deskService.GetMyTrashBin();
-
-            return Ok(deskWithIdDtos);
-            ;
         }
 
         [HttpGet]
@@ -91,42 +87,6 @@ namespace FunAPI.Areas.V2.Controllers
             var deskWithIdDto = await _deskService.GetById(id);
 
             return Ok(deskWithIdDto);
-        }
-
-        [HttpDelete]
-        [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult> MoveToTrashBin(
-            [Required] [Id(typeof(Desk))] long id
-        )
-        {
-            await _deskService.MoveToTrashBin(id);
-
-            return Ok();
-        }
-
-        [HttpGet]
-        [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult> RestoreFromTrashBin(
-            [Required] [Id(typeof(Desk))] long id
-        )
-        {
-            await _deskService.RestoreFromTrashBin(id);
-
-            return Ok();
-        }
-
-        [HttpDelete]
-        [MapToApiVersion("2.0")]
-        [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
-        public async Task<ActionResult> RemoveFromTrashBin(
-            [Required] [Id(typeof(Desk))] long id
-        )
-        {
-            await _deskService.RemoveFromTrashBin(id);
-
-            return Ok();
         }
 
         [HttpGet]

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using Infrastructure.Abstractions;
@@ -6,6 +7,7 @@ using Models.Db.Tree;
 using Models.DTOs.CardConnections;
 using Models.DTOs.Misc;
 using Models.Misc;
+using Newtonsoft.Json;
 using Services.External;
 using Services.SharedServices.Abstractions;
 using Services.Versioned.V1;
@@ -23,8 +25,10 @@ namespace Services.Versioned.Implementations
 
         private IMapper _mapper;
         private IDeskShareRepository _deskShareRepository;
+        private IDeskActionHistoryRepository _deskActionHistoryRepository;
+        private ISSEService _sseService;
 
-        public CardConnectionService(ICardConnectionRepository cardConnectionRepository, IMapper mapper, IDeskRepository deskRepository, IRequestAccountIdService requestAccountIdService, ICardRepository cardRepository, IDeskShareRepository deskShareRepository)
+        public CardConnectionService(ICardConnectionRepository cardConnectionRepository, IMapper mapper, IDeskRepository deskRepository, IRequestAccountIdService requestAccountIdService, ICardRepository cardRepository, IDeskShareRepository deskShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository, ISSEService sseService)
         {
             _cardConnectionRepository = cardConnectionRepository;
             _mapper = mapper;
@@ -32,6 +36,8 @@ namespace Services.Versioned.Implementations
             _requestAccountIdService = requestAccountIdService;
             _cardRepository = cardRepository;
             _deskShareRepository = deskShareRepository;
+            _deskActionHistoryRepository = deskActionHistoryRepository;
+            _sseService = sseService;
         }
 
         async Task<CreatedDto> ICardConnectionServiceV1.Create(CreateCardConnectionDto createCardConnectionDto)
@@ -69,7 +75,7 @@ namespace Services.Versioned.Implementations
 
             var desk = await _deskRepository.GetById(cardLeft.DeskId);
 
-            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.HasSharedReadTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardConnectionServiceV1.Create:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
@@ -79,7 +85,22 @@ namespace Services.Versioned.Implementations
 
             await _cardConnectionRepository.Add(cardConnection);
 
-            // TODO: Raise SSE event
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.Connect,
+                OldData = "",
+                NewData = JsonConvert.SerializeObject(new object[] {cardConnection.CardLeftId, cardConnection.CardRightId})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
+            
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
 
             return cardConnection.Id;
         }
@@ -99,7 +120,7 @@ namespace Services.Versioned.Implementations
             var card = await _cardRepository.GetById(cardConnection.CardLeftId, c => c.Desk);
 
             var desk = card.Desk;
-            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.HasSharedReadTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardConnectionServiceV1.Remove:\nAttempt to access restricted desk!\nDesk ({card.DeskId}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
@@ -107,7 +128,22 @@ namespace Services.Versioned.Implementations
 
             await _cardConnectionRepository.Remove(cardConnection);
 
-            // TODO: Raise SSE event
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.Disconnect,
+                OldData = "",
+                NewData = JsonConvert.SerializeObject(new object[] {cardConnection.CardLeftId, cardConnection.CardRightId})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
+
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
         }
 
         async Task<ICollection<CardConnectionWithIdDto>> ICardConnectionServiceV1.GetAllByDesk(long id)
@@ -116,7 +152,7 @@ namespace Services.Versioned.Implementations
 
             var desk = await _deskRepository.GetById(id);
 
-            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.HasSharedReadTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardConnectionServiceV1.GetAllByDesk:\nAttempt to access restricted desk!\nDesk ({id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
