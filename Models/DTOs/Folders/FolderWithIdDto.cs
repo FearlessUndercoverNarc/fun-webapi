@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Models.DTOs.Desks;
+using Models.DTOs.Relations;
 
 namespace Models.DTOs.Folders
 {

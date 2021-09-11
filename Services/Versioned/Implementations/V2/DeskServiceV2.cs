@@ -1,41 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AutoMapper;
-using Infrastructure.Abstractions;
 using Models.Db.Tree;
 using Models.DTOs.Desks;
 using Models.DTOs.Misc;
 using Models.Misc;
-using Newtonsoft.Json;
 using Services.External;
-using Services.SharedServices.Abstractions;
-using Services.Versioned.V1;
+using Services.Versioned.V2;
 
 namespace Services.Versioned.Implementations
 {
-    public partial class DeskService : IDeskServiceV1
+    public partial class DeskService : IDeskServiceV2
     {
-        private IDeskRepository _deskRepository;
-        private IFolderRepository _folderRepository;
-        private IMapper _mapper;
-        private IRequestAccountIdService _requestAccountIdService;
-        private IDeskShareRepository _deskShareRepository;
-        private IFolderShareRepository _folderShareRepository;
-        private IDeskActionHistoryRepository _deskActionHistoryRepository;
-
-        public DeskService(IDeskRepository deskRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IFolderRepository folderRepository, IDeskShareRepository deskShareRepository, IFolderShareRepository folderShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository)
-        {
-            _deskRepository = deskRepository;
-            _mapper = mapper;
-            _requestAccountIdService = requestAccountIdService;
-            _folderRepository = folderRepository;
-            _deskShareRepository = deskShareRepository;
-            _folderShareRepository = folderShareRepository;
-            _deskActionHistoryRepository = deskActionHistoryRepository;
-        }
-
-        async Task<CreatedDto> IDeskServiceV1.Create(CreateDeskDto createDeskDto)
+        async Task<CreatedDto> IDeskServiceV2.Create(CreateDeskDto createDeskDto)
         {
             var requestAccountId = _requestAccountIdService.Id;
             if (createDeskDto.ParentId is { } parentId)
@@ -44,7 +21,7 @@ namespace Services.Versioned.Implementations
                 // parentFolder can't be null, it's ID is checked in DTO
 
                 // TODO: Support separate read/write accesses
-                if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.IsSharedTo(parentFolder.Id, requestAccountId)))
+                if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedWriteTo(parentFolder.Id, requestAccountId)))
                 {
                     await TelegramAPI.Send($"IDeskServiceV1.Create:\nAttempt to create desk in restricted location!\nFolderId ({parentId})\nUser ({requestAccountId})");
                     throw new FunException("Вы не можете создавать здесь что-либо, так как не являетесь владельцем");
@@ -75,16 +52,16 @@ namespace Services.Versioned.Implementations
             return desk.Id;
         }
 
-        async Task IDeskServiceV1.Update(UpdateDeskDto updateDeskDto)
+        async Task IDeskServiceV2.Update(UpdateDeskDto updateDeskDto)
         {
             var desk = await _deskRepository.GetById(updateDeskDto.Id);
 
             var requestAccountId = _requestAccountIdService.Id;
 
-            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.HasSharedWriteTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"IDeskServiceV1.Update:\nAttempt to access restricted desk!\nFolderId ({updateDeskDto.Id})\nUser ({requestAccountId})");
-                throw new FunException("У вас нет доступа для внесения изменений!");
+                throw new FunException("Необходимо быть владельцем для внесения изменений!");
             }
 
             if (desk.IsInTrashBin)
@@ -110,11 +87,9 @@ namespace Services.Versioned.Implementations
             };
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
-            
-            // TODO: Raise SSE event
         }
 
-        async Task<DeskWithIdDto> IDeskServiceV1.GetById(long id)
+        async Task<DeskWithIdDto> IDeskServiceV2.GetById(long id)
         {
             var desk = await _deskRepository.GetById(
                 id,
@@ -123,7 +98,7 @@ namespace Services.Versioned.Implementations
             );
 
             var requestAccountId = _requestAccountIdService.Id;
-            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.HasSharedReadTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"IDeskServiceV1.GetById:\nAttempt to access restricted desk!\nFolderId ({id})\nUser ({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске!");
@@ -134,20 +109,20 @@ namespace Services.Versioned.Implementations
             return deskWithIdDto;
         }
 
-        async Task<ICollection<DeskWithIdDto>> IDeskServiceV1.GetByFolder(long folderId)
+        async Task<ICollection<DeskWithIdDto>> IDeskServiceV2.GetByFolder(long folderId)
         {
             var requestAccountId = _requestAccountIdService.Id;
 
             var folder = await _folderRepository.GetById(folderId);
 
-            if (!(folder.AuthorAccountId == requestAccountId || await _folderShareRepository.IsSharedTo(folder.Id, requestAccountId)))
+            if (!(folder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedReadTo(folder.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"IDeskServiceV1.GetByFolder:\nAttempt to access desks in restricted location!\nFolderId ({folderId})\nUser ({_requestAccountIdService.Id})");
                 throw new FunException("Вы не можете просматривать содержимое этой папки или дела, так как не являетесь владельцем");
             }
 
             var desks = await _deskRepository.GetMany(
-                d => d.AuthorAccountId == requestAccountId && d.ParentId == folderId && !d.IsInTrashBin,
+                d => d.ParentId == folderId && d.AuthorAccountId == requestAccountId && !d.IsInTrashBin,
                 d => d.Parent,
                 d => d.AuthorAccount
             );
@@ -157,7 +132,7 @@ namespace Services.Versioned.Implementations
             return deskWithIdDtos;
         }
 
-        async Task<ICollection<DeskWithIdDto>> IDeskServiceV1.GetSharedToMe()
+        async Task<ICollection<DeskWithIdDto>> IDeskServiceV2.GetSharedToMe()
         {
             var requestAccountId = _requestAccountIdService.Id;
 
@@ -175,13 +150,13 @@ namespace Services.Versioned.Implementations
             return deskWithIdDtos;
         }
 
-        async Task IDeskServiceV1.MoveToFolder(long deskId, long destinationId)
+        async Task IDeskServiceV2.MoveToFolder(long deskId, long destinationId)
         {
             var desk = await _deskRepository.GetById(deskId);
 
             var requestAccountId = _requestAccountIdService.Id;
 
-            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.HasSharedWriteTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"IDeskServiceV1.MoveToFolder:\nAttempt to access restricted folder!\nDeskId ({deskId}) -> ({destinationId})\nUser ({requestAccountId})");
                 throw new FunException("Вы не можете перемещать этот элемент");
@@ -201,7 +176,7 @@ namespace Services.Versioned.Implementations
 
             // we need to check that destination can be edited by us (either by authoring, or being shared)
             var destinationFolder = await _folderRepository.GetById(destinationId);
-            if (!(destinationFolder.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(destinationId, requestAccountId)))
+            if (!(destinationFolder.AuthorAccountId == requestAccountId || await _deskShareRepository.HasSharedWriteTo(destinationId, requestAccountId)))
             {
                 await TelegramAPI.Send($"IDeskServiceV1.MoveToFolder:\nAttempt to move element into restricted folder!\nDeskId ({deskId}) -> ({destinationId})\nUser ({requestAccountId})");
                 throw new FunException("Вы не можете перемещать в эту папку, так как не являетесь её владельцем");

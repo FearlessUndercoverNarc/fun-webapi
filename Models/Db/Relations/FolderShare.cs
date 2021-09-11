@@ -15,5 +15,7 @@ namespace Models.Db.Relations
         public long FolderId { get; set; }
 
         public virtual Folder Folder { get; set; }
+
+        public bool HasWriteAccess { get; set; }
     }
 }

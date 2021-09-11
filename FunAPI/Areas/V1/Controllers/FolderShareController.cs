@@ -1,10 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using FunAPI.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Models.Attributes;
 using Models.Db.Account;
 using Models.Db.Tree;
+using Models.DTOs.Relations;
 using Services.Versioned.V1;
 
 namespace FunAPI.Areas.V1.Controllers
@@ -27,12 +29,25 @@ namespace FunAPI.Areas.V1.Controllers
         [MapToApiVersion("1.0")]
         public async Task<ActionResult> Share(
             [Required] [Id(typeof(Folder))] long id,
-            [Required] [Id(typeof(FunAccount))] long recipientId
+            [Required] [Id(typeof(FunAccount))] long recipientId,
+            [Required] bool hasWriteAccess
         )
         {
-            await _folderShareService.Share(id, recipientId);
+            await _folderShareService.Share(id, recipientId, hasWriteAccess);
 
             return Ok();
+        }
+        
+        [HttpGet]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        [MapToApiVersion("1.0")]
+        public async Task<ActionResult<ICollection<FolderShareDto>>> GetShares(
+            [Required] [Id(typeof(Desk))] long id
+        )
+        {
+            var deskShareDtos = await _folderShareService.GetShares(id);
+
+            return Ok(deskShareDtos);
         }
 
         [HttpGet]

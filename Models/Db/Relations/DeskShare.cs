@@ -15,5 +15,7 @@ namespace Models.Db.Relations
         public long DeskId { get; set; }
 
         public virtual Desk Desk { get; set; }
+
+        public bool HasWriteAccess { get; set; }
     }
 }

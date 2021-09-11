@@ -1,11 +1,13 @@
 using AutoMapper;
 using Models.Db.Account;
+using Models.Db.Relations;
 using Models.Db.Tree;
 using Models.DTOs.CardConnections;
 using Models.DTOs.Cards;
 using Models.DTOs.Desks;
 using Models.DTOs.Folders;
 using Models.DTOs.FunAccounts;
+using Models.DTOs.Relations;
 
 namespace Services.AutoMapperProfiles
 {
@@ -58,6 +60,11 @@ namespace Services.AutoMapperProfiles
             CreateMap<CardConnection, CardConnectionWithIdDto>()
                 .ReverseMap();
             CreateMap<CardConnection, CreateCardConnectionDto>()
+                .ReverseMap();
+
+            CreateMap<FolderShare, FolderShareDto>()
+                .ReverseMap();
+            CreateMap<DeskShare, DeskShareDto>()
                 .ReverseMap();
         }
     }
