@@ -1,11 +1,13 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using AutoMapper;
 using Infrastructure.Abstractions;
 using Models.Db.Account;
 using Models.DTOs.FunAccounts;
 using Models.DTOs.Misc;
+using Services.SharedServices.Abstractions;
 
-namespace Services.SharedServices.Abstractions
+namespace Services.SharedServices.Implementations
 {
     public class FunAccountService : IFunAccountService
     {
@@ -40,6 +42,15 @@ namespace Services.SharedServices.Abstractions
             }
 
             await _funAccountRepository.Update(funAccount);
+        }
+
+        public async Task<ICollection<FunAccountWithIdDto>> GetAll()
+        {
+            var funAccounts = await _funAccountRepository.GetMany();
+
+            var funAccountWithIdDtos = _mapper.Map<ICollection<FunAccountWithIdDto>>(funAccounts);
+
+            return funAccountWithIdDtos;
         }
     }
 }

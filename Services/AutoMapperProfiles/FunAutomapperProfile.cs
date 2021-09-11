@@ -31,6 +31,8 @@ namespace Services.AutoMapperProfiles
             // -----------
 
 
+            CreateMap<FunAccount, FunAccountWithIdDto>()
+                .ReverseMap();
             CreateMap<FunAccount, CreateFunAccountDto>()
                 .ReverseMap();
             CreateMap<FunAccount, UpdateFunAccountDto>()
