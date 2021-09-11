@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using Models.DTOs.Folders;
 
-namespace Services.Versioned.V2
+namespace Services.Versioned.V1
 {
-    public interface ITrashBinServiceV2
+    public interface IFolderTrashBinServiceV1
     {
         Task<ICollection<FolderWithIdDto>> GetMyTrashBin();
         

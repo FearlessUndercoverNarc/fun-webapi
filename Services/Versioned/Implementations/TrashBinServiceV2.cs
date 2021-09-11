@@ -1,19 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Models.Db.Tree;
 using Models.DTOs.Folders;
 using Models.Misc;
 using Services.External;
-using Services.Versioned.V1;
 using Services.Versioned.V2;
 
 namespace Services.Versioned.Implementations
 {
-    public partial class TrashBinService : ITrashBinServiceV2
+    public partial class FolderTrashBinService : IFolderTrashBinServiceV2
     {
-        async Task<ICollection<FolderWithIdDto>> ITrashBinServiceV2.GetMyTrashBin()
+        async Task<ICollection<FolderWithIdDto>> IFolderTrashBinServiceV2.GetMyTrashBin()
         {
             var requestAccountId = _requestAccountIdService.Id;
             var folders = await _folderRepository.GetMany(
@@ -26,7 +24,7 @@ namespace Services.Versioned.Implementations
             return folderWithIdDtos;
         }
 
-        async Task ITrashBinServiceV2.MoveToTrashBin(long id)
+        async Task IFolderTrashBinServiceV2.MoveToTrashBin(long id)
         {
             var folder = await _folderRepository.GetById(
                 id,
@@ -73,7 +71,7 @@ namespace Services.Versioned.Implementations
             await _deskRepository.UpdateMany(desksToTrash);
         }
 
-        async Task ITrashBinServiceV2.RestoreFromTrashBin(long id)
+        async Task IFolderTrashBinServiceV2.RestoreFromTrashBin(long id)
         {
             var folder = await _folderRepository.GetById(id,
                 f => f.Parent,
@@ -125,7 +123,7 @@ namespace Services.Versioned.Implementations
             await _deskRepository.UpdateMany(desksToTrash);
         }
 
-        async Task ITrashBinServiceV2.RemoveFromTrashBin(long id)
+        async Task IFolderTrashBinServiceV2.RemoveFromTrashBin(long id)
         {
             var folder = await _folderRepository.GetById(id,
                 f => f.Desks.Where(d => !d.IsInTrashBin)

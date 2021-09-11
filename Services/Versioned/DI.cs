@@ -11,10 +11,12 @@ namespace Services.Versioned
         {
             services.AddScoped<IFolderServiceV1, FolderService>();
             services.AddScoped<IFolderServiceV2, FolderService>();
-            services.AddScoped<ITrashBinServiceV1, TrashBinService>();
-            services.AddScoped<ITrashBinServiceV2, TrashBinService>();
+            services.AddScoped<IFolderTrashBinServiceV1, FolderTrashBinService>();
+            services.AddScoped<IFolderTrashBinServiceV2, FolderTrashBinService>();
             services.AddScoped<IDeskServiceV1, DeskService>();
             services.AddScoped<IDeskServiceV2, DeskService>();
+            services.AddScoped<IDeskTrashBinServiceV1, DeskTrashBinService>();
+            services.AddScoped<IDeskTrashBinServiceV2, DeskTrashBinService>();
             services.AddScoped<ICardServiceV1, CardService>();
             services.AddScoped<ICardServiceV2, CardService>();
             services.AddScoped<ICardConnectionServiceV1, CardConnectionService>();
