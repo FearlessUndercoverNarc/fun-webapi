@@ -68,6 +68,16 @@ namespace FunAPI.Areas.V1.Controllers
 
             return Ok(deskWithIdDtos);
         }
+        
+        [HttpGet]
+        [MapToApiVersion("1.0")]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<ICollection<DeskWithIdDto>>> GetSharedToMe()
+        {
+            var deskWithIdDtos = await _deskService.GetSharedToMe();
+
+            return Ok(deskWithIdDtos);
+        }
 
         [HttpGet]
         [MapToApiVersion("1.0")]

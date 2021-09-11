@@ -16,7 +16,7 @@ namespace Infrastructure.Implementations
 
         public async Task<bool> IsParentSharedTo(long id, long accountId)
         {
-            return await GetDbSetT().AnyAsync(f => f.Parent.SharedToRelation.Any(s=>s.FunAccountId == accountId));
+            return await GetDbSetT().AnyAsync(f => f.Parent.SharedToRelation.Any(s => s.FunAccountId == accountId));
         }
     }
 }

@@ -92,11 +92,11 @@ namespace Services.Versioned.Implementations
             return folderWithIdDtos;
         }
 
-        async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetSharedToMeRoot()
+        async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetSharedToMeRoots()
         {
             var requestAccountId = _requestAccountIdService.Id;
             
-            // GetSharedRoots is already awared of trashbin
+            // GetIndividuallyShared is already awared of trashbin
             var sharedRootIds = await _folderShareRepository.GetSharedRoots(requestAccountId);
             var folders = await _folderRepository.GetMany(
                 f => sharedRootIds.Contains(f.Id),

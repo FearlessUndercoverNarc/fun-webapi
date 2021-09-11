@@ -65,7 +65,7 @@ namespace FunAPI.Areas.V2.Controllers
         [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult<ICollection<FolderWithIdDto>>> GetSharedToMeRoot()
         {
-            var folderWithIdDtos = await _folderService.GetSharedToMeRoot();
+            var folderWithIdDtos = await _folderService.GetSharedToMeRoots();
 
             return Ok(folderWithIdDtos);
         }

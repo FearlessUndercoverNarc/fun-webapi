@@ -19,13 +19,15 @@ namespace Services.Versioned.Implementations
         private IFolderRepository _folderRepository;
         private IMapper _mapper;
         private IRequestAccountIdService _requestAccountIdService;
+        private IDeskShareRepository _deskShareRepository;
 
-        public DeskService(IDeskRepository deskRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IFolderRepository folderRepository)
+        public DeskService(IDeskRepository deskRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IFolderRepository folderRepository, IDeskShareRepository deskShareRepository)
         {
             _deskRepository = deskRepository;
             _mapper = mapper;
             _requestAccountIdService = requestAccountIdService;
             _folderRepository = folderRepository;
+            _deskShareRepository = deskShareRepository;
         }
 
         async Task<CreatedDto> IDeskServiceV1.Create(CreateDeskDto createDeskDto)
@@ -77,8 +79,13 @@ namespace Services.Versioned.Implementations
 
         async Task<DeskWithIdDto> IDeskServiceV1.GetById(long id)
         {
-            var desk = await _deskRepository.GetById(id);
+            var desk = await _deskRepository.GetById(
+                id,
+                d => d.Parent,
+                d => d.AuthorAccount
+            );
 
+            // TODO: Support shared folders
             if (desk.AuthorAccountId != _requestAccountIdService.Id)
             {
                 await TelegramAPI.Send($"IDeskServiceV1.GetById:\nAttempt to access restricted desk!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
@@ -95,7 +102,6 @@ namespace Services.Versioned.Implementations
             var requestAccountId = _requestAccountIdService.Id;
 
             var folder = await _folderRepository.GetById(folderId);
-            // parentFolder can't be null, it's ID is checked in DTO
 
             if (folder.AuthorAccountId != _requestAccountIdService.Id)
             {
@@ -104,7 +110,9 @@ namespace Services.Versioned.Implementations
             }
 
             var desks = await _deskRepository.GetMany(
-                d => d.ParentId == folderId && d.AuthorAccountId == requestAccountId && !d.IsInTrashBin
+                d => d.ParentId == folderId && d.AuthorAccountId == requestAccountId && !d.IsInTrashBin,
+                d => d.Parent,
+                d => d.AuthorAccount
             );
 
             var deskWithIdDtos = _mapper.Map<ICollection<DeskWithIdDto>>(desks);
@@ -112,12 +120,32 @@ namespace Services.Versioned.Implementations
             return deskWithIdDtos;
         }
 
-        public async Task<ICollection<DeskWithIdDto>> GetMyTrashBin()
+        async Task<ICollection<DeskWithIdDto>> IDeskServiceV1.GetSharedToMe()
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+
+            // GetIndividuallyShared is already aware of trashbin
+            var individuallySharedDeskIds = await _deskShareRepository.GetIndividuallyShared(requestAccountId);
+
+            var desks = await _deskRepository.GetMany(
+                d => individuallySharedDeskIds.Contains(d.Id),
+                d => d.Parent,
+                d => d.AuthorAccount
+            );
+
+            var deskWithIdDtos = _mapper.Map<ICollection<DeskWithIdDto>>(desks);
+
+            return deskWithIdDtos;
+        }
+
+        async Task<ICollection<DeskWithIdDto>> IDeskServiceV1.GetMyTrashBin()
         {
             var requestAccountId = _requestAccountIdService.Id;
 
             var desks = await _deskRepository.GetMany(
-                d => d.AuthorAccountId == requestAccountId && d.IsInTrashBin
+                d => d.AuthorAccountId == requestAccountId && d.IsInTrashBin,
+                d => d.Parent,
+                d => d.AuthorAccount
             );
 
             var deskWithIdDtos = _mapper.Map<ICollection<DeskWithIdDto>>(desks);

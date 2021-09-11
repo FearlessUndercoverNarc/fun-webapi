@@ -73,7 +73,7 @@ namespace Services.Versioned.Implementations
             return folderWithIdDtos;
         }
 
-        async Task<ICollection<FolderWithIdDto>> IFolderServiceV2.GetSharedToMeRoot()
+        async Task<ICollection<FolderWithIdDto>> IFolderServiceV2.GetSharedToMeRoots()
         {
             var requestAccountId = _requestAccountIdService.Id;
 
@@ -190,7 +190,7 @@ namespace Services.Versioned.Implementations
             await _folderRepository.Update(folder);
         }
 
-        public async Task RemoveFromTrashBin(long id)
+        async Task IFolderServiceV2.RemoveFromTrashBin(long id)
         {
             var folder = await _folderRepository.GetById(id,
                 f => f.Desks.Where(d => !d.IsInTrashBin)

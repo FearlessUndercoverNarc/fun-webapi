@@ -13,24 +13,24 @@ namespace FunAPI.Areas.V1.Controllers
     [ValidateModelFilter]
     [ResponseCache(NoStore = true, Duration = 0)]
     [ApiVersion("1.0")]
-    public class FolderShareController : Controller
+    public class DeskShareController : Controller
     {
-        private IFolderShareServiceV1 _folderShareService;
+        private IDeskShareServiceV1 _deskShareService;
 
-        public FolderShareController(IFolderShareServiceV1 folderShareService)
+        public DeskShareController(IDeskShareServiceV1 deskShareService)
         {
-            _folderShareService = folderShareService;
+            _deskShareService = deskShareService;
         }
 
         [HttpGet]
         [TypeFilter(typeof(AuthTokenFilter))]
         [MapToApiVersion("1.0")]
         public async Task<ActionResult> Share(
-            [Required] [Id(typeof(Folder))] long id,
+            [Required] [Id(typeof(Desk))] long id,
             [Required] [Id(typeof(FunAccount))] long recipientId
         )
         {
-            await _folderShareService.Share(id, recipientId);
+            await _deskShareService.Share(id, recipientId);
 
             return Ok();
         }
@@ -39,11 +39,11 @@ namespace FunAPI.Areas.V1.Controllers
         [TypeFilter(typeof(AuthTokenFilter))]
         [MapToApiVersion("1.0")]
         public async Task<ActionResult> RemoveShare(
-            [Required] [Id(typeof(Folder))] long id,
+            [Required] [Id(typeof(Desk))] long id,
             [Required] [Id(typeof(FunAccount))] long recipientId
         )
         {
-            await _folderShareService.RemoveShare(id, recipientId);
+            await _deskShareService.RemoveShare(id, recipientId);
 
             return Ok();
         }

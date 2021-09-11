@@ -29,6 +29,10 @@ namespace Models.Db.Account
         public virtual ICollection<Folder> SharedFolders { get; set; }
 
         public virtual ICollection<FolderShare> SharedFoldersRelation { get; set; }
+        
+        public virtual ICollection<Desk> SharedDesks { get; set; }
+
+        public virtual ICollection<DeskShare> SharedDesksRelation { get; set; }
 
         public virtual ICollection<TokenSession> TokenSessions { get; set; }
     }

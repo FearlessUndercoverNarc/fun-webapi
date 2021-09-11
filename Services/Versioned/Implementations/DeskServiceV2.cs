@@ -96,6 +96,33 @@ namespace Services.Versioned.Implementations
             return deskWithIdDtos;
         }
 
+        async Task<ICollection<DeskWithIdDto>> IDeskServiceV2.GetSharedToMe()
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+
+            // GetIndividuallyShared is already aware of trashbin
+            var individuallySharedDeskIds = await _deskShareRepository.GetIndividuallyShared(requestAccountId);
+
+            var desks = await _deskRepository.GetMany(d => individuallySharedDeskIds.Contains(d.Id));
+
+            var deskWithIdDtos = _mapper.Map<ICollection<DeskWithIdDto>>(desks);
+
+            return deskWithIdDtos;
+        }
+
+        async Task<ICollection<DeskWithIdDto>> IDeskServiceV2.GetMyTrashBin()
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+
+            var desks = await _deskRepository.GetMany(
+                d => d.AuthorAccountId == requestAccountId && d.IsInTrashBin
+            );
+
+            var deskWithIdDtos = _mapper.Map<ICollection<DeskWithIdDto>>(desks);
+
+            return deskWithIdDtos;
+        }
+
         async Task IDeskServiceV2.MoveToTrashBin(long id)
         {
             var desk = await _deskRepository.GetById(id);

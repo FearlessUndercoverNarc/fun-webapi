@@ -12,10 +12,11 @@ namespace Seeder
 {
     public class SeedData
     {
-        private IFunAccountService _funAccountService;
-        private IFolderServiceV2 _folderService;
-        private IDeskServiceV2 _deskService;
-        private IRequestAccountIdSetterService _requestAccountIdSetterService;
+        private readonly IFunAccountService _funAccountService;
+        private readonly IFolderServiceV2 _folderService;
+        private readonly IDeskServiceV2 _deskService;
+        private readonly IDeskShareServiceV2 _deskShareService;
+        private readonly IRequestAccountIdSetterService _requestAccountIdSetterService;
         private readonly IServiceScope _serviceScope;
 
         public SeedData(IServiceProvider provider)
@@ -25,6 +26,7 @@ namespace Seeder
             _funAccountService = _serviceScope.ServiceProvider.GetRequiredService<IFunAccountService>();
             _folderService = _serviceScope.ServiceProvider.GetRequiredService<IFolderServiceV2>();
             _deskService = _serviceScope.ServiceProvider.GetRequiredService<IDeskServiceV2>();
+            _deskShareService = _serviceScope.ServiceProvider.GetRequiredService<IDeskShareServiceV2>();
             _requestAccountIdSetterService = _serviceScope.ServiceProvider.GetRequiredService<IRequestAccountIdSetterService>();
         }
 
@@ -42,7 +44,7 @@ namespace Seeder
 
             Console.WriteLine("Database dropped and recreated");
 
-            await _funAccountService.CreateFunAccount(new() {Login = "Admin", Password = "e3afed0047b08059d0fada10f400c1e5", Fio = "Admin Adminovich Adminov"});
+            long adminId = await _funAccountService.CreateFunAccount(new() {Login = "Admin", Password = "e3afed0047b08059d0fada10f400c1e5", Fio = "Admin Adminovich Adminov"});
             long gpelId = await _funAccountService.CreateFunAccount(new() {Login = "Gpel", Password = "63214eb0e19eae2e0547d7c3891b6146", Fio = "Genych"});
             await _funAccountService.CreateFunAccount(new() {Login = "Egop", Password = "27adc6b116ca4aea87cee80cfb838b9b", Fio = "Egop Egopovich Egopov"});
             Console.WriteLine("Seeded accounts");
@@ -60,6 +62,8 @@ namespace Seeder
                 Title = "Test Desk",
                 Description = "There could be your ads."
             });
+
+            await _deskShareService.Share(deskId, adminId);
         }
     }
 }
