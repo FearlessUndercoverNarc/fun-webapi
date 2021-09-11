@@ -6,7 +6,7 @@ namespace Models.Db.Common
     {
         [Key]
         public long Id { get; set; }
-        
+
         public bool IsSoftDeleted { get; set; }
     }
 }

@@ -41,7 +41,7 @@ namespace FunAPI.Areas.V2.Controllers
         [MapToApiVersion("2.0")]
         [TypeFilter(typeof(AuthTokenFilter.WithSubscription))]
         public async Task<ActionResult> Remove(
-            [Required] [Id(typeof(CardConnection))]
+            [Required]
             long id
         )
         {

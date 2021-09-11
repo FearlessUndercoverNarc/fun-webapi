@@ -11,7 +11,6 @@ using Models.Misc;
 using Services.External;
 using Services.SharedServices.Abstractions;
 using Services.Versioned.V1;
-using Services.Versioned.V2;
 
 namespace Services.Versioned.Implementations
 {
@@ -34,21 +33,24 @@ namespace Services.Versioned.Implementations
 
         async Task<CreatedDto> IFolderServiceV1.Create(CreateFolderDto createFolderDto)
         {
+            var requestAccountId = _requestAccountIdService.Id;
+
+            // TODO: Support separate read/write accesses
             if (createFolderDto.ParentId is { } parentId)
             {
                 var parentFolder = await _folderRepository.GetById(parentId);
                 // parentFolder can't be null, it's ID is checked in DTO
 
-                if (parentFolder.AuthorAccountId != _requestAccountIdService.Id)
+                if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.IsSharedTo(parentFolder.Id, requestAccountId)))
                 {
-                    await TelegramAPI.Send($"IFolderServiceV1.Create:\nAttempt to create folder in restricted location!\nFolderId ({parentId})\nUser ({_requestAccountIdService.Id})");
+                    await TelegramAPI.Send($"IFolderServiceV1.Create:\nAttempt to create folder in restricted location!\nFolderId ({parentId})\nUser ({requestAccountId})");
                     throw new FunException("Вы не можете создавать здесь что-либо, так как не являетесь владельцем");
                 }
             }
 
             var folder = _mapper.Map<Folder>(createFolderDto);
 
-            folder.AuthorAccountId = _requestAccountIdService.Id;
+            folder.AuthorAccountId = requestAccountId;
             folder.CreatedAt = DateTime.Now;
             folder.LastUpdatedAt = DateTime.Now;
 
@@ -61,15 +63,16 @@ namespace Services.Versioned.Implementations
         {
             var folder = await _folderRepository.GetById(updateFolderDto.Id);
 
-            if (folder.AuthorAccountId != _requestAccountIdService.Id)
+            long requestAccountId = _requestAccountIdService.Id;
+            if (!(folder.AuthorAccountId == requestAccountId || await _folderShareRepository.IsSharedTo(folder.Id, requestAccountId)))
             {
-                await TelegramAPI.Send($"IFolderServiceV1.Update:\nAttempt to access restricted folder!\nFolderId ({updateFolderDto.Id})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderServiceV1.Update:\nAttempt to access restricted folder!\nFolderId ({updateFolderDto.Id})\nUser ({requestAccountId})");
                 throw new FunException("Необходимо быть владельцем для внесения изменений!");
             }
 
             if (folder.IsInTrashBin)
             {
-                await TelegramAPI.Send($"IFolderServiceV1.Update:\nAttempt to access folder in trash bin!\nFolderId ({updateFolderDto.Id})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderServiceV1.Update:\nAttempt to access folder in trash bin!\nFolderId ({updateFolderDto.Id})\nUser ({requestAccountId})");
                 throw new FunException("Нельзя изменять параметры элементов в корзине!\nВосстановите элемент для внесения изменений.");
             }
 
@@ -95,7 +98,7 @@ namespace Services.Versioned.Implementations
         async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetSharedToMeRoots()
         {
             var requestAccountId = _requestAccountIdService.Id;
-            
+
             // GetIndividuallyShared is already awared of trashbin
             var sharedRootIds = await _folderShareRepository.GetSharedRoots(requestAccountId);
             var folders = await _folderRepository.GetMany(
@@ -115,13 +118,13 @@ namespace Services.Versioned.Implementations
                 f => f.Desks.Where(d => !d.IsInTrashBin)
             );
 
-            if (parentFolder.AuthorAccountId != _requestAccountIdService.Id)
+            var requestAccountId = _requestAccountIdService.Id;
+
+            if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.IsSharedTo(parentFolder.Id, requestAccountId)))
             {
-                await TelegramAPI.Send($"IFolderServiceV1.GetSubfoldersByFolder:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderServiceV1.GetSubfoldersByFolder:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой папке");
             }
-
-            // TODO: Support shared folders
 
             var folders = await _folderRepository.GetMany(
                 f => f.ParentId == id && !f.IsInTrashBin,
@@ -139,16 +142,16 @@ namespace Services.Versioned.Implementations
                 f => f.Desks.Where(d => !d.IsInTrashBin)
             );
 
-            // TODO: Support shared folders
-            if (folder.AuthorAccountId != _requestAccountIdService.Id)
+            var requestAccountId = _requestAccountIdService.Id;
+            if (folder.AuthorAccountId != requestAccountId)
             {
-                await TelegramAPI.Send($"IFolderServiceV1.MoveToTrashBin:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToTrashBin:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({requestAccountId})");
                 throw new FunException("Необходимо быть владельцем для удаления элемента!");
             }
 
             if (folder.IsInTrashBin)
             {
-                await TelegramAPI.Send($"IFolderServiceV1.MoveToTrashBin:\nAttempt to access folder in trash bin!\nFolderId ({id})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToTrashBin:\nAttempt to access folder in trash bin!\nFolderId ({id})\nUser ({requestAccountId})");
                 throw new FunException("Этот элемент уже в корзине");
             }
 
@@ -227,6 +230,8 @@ namespace Services.Versioned.Implementations
 
             // HACK: we really need to delete only the first descendants, because the others aren't ever visible to user
 
+            // TODO: Remove shares
+
             foreach (var desk in folder.Desks)
             {
                 desk.LastUpdatedAt = DateTime.Now;
@@ -244,21 +249,22 @@ namespace Services.Versioned.Implementations
         {
             var folder = await _folderRepository.GetById(id);
 
-            if (folder.AuthorAccountId != _requestAccountIdService.Id)
+            var requestAccountId = _requestAccountIdService.Id;
+            if (!(folder.AuthorAccountId == requestAccountId || await _folderShareRepository.IsSharedTo(folder.Id, requestAccountId)))
             {
-                await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to access restricted folder!\nFolderId ({id}) -> ({destinationId})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to access restricted folder!\nFolderId ({id}) -> ({destinationId})\nUser ({requestAccountId})");
                 throw new FunException("Вы не можете перемещать этот элемент");
             }
 
             if (folder.IsInTrashBin)
             {
-                await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to move folder in trash bin!\nFolderId ({id}) -> ({destinationId})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to move folder in trash bin!\nFolderId ({id}) -> ({destinationId})\nUser ({requestAccountId})");
                 throw new FunException("Перемещение элементов в корзине запрещено");
             }
 
             if (id == destinationId)
             {
-                await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to move folder into itself!\nFolderId ({id}) -> ({destinationId})\nUser ({_requestAccountIdService.Id})");
+                await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to move folder into itself!\nFolderId ({id}) -> ({destinationId})\nUser ({requestAccountId})");
                 throw new FunException("Вы пытаетесь переместить элемент внутрь себя");
             }
 
@@ -267,10 +273,9 @@ namespace Services.Versioned.Implementations
             {
                 var destinationFolder = await _folderRepository.GetById(destinationId.Value);
 
-                // TODO: Support shared folders
-                if (destinationFolder.AuthorAccountId != _requestAccountIdService.Id)
+                if (!(destinationFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.IsSharedTo(destinationFolder.Id, requestAccountId)))
                 {
-                    await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to move folder into restricted folder!\nFolderId ({id}) -> ({destinationId})\nUser ({_requestAccountIdService.Id})");
+                    await TelegramAPI.Send($"IFolderServiceV1.MoveToFolder:\nAttempt to move folder into restricted folder!\nFolderId ({id}) -> ({destinationId})\nUser ({requestAccountId})");
                     throw new FunException("Вы не можете перемещать в эту папку, так как не являетесь её владельцем");
                 }
             }

@@ -46,8 +46,7 @@ namespace Services.Versioned.Implementations
 
             var desk = await _deskRepository.GetById(cardLeft.DeskId);
 
-            // TODO: Support shared desks
-            if (desk.AuthorAccountId != requestAccountId)
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardConnectionServiceV2.Create:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
@@ -68,10 +67,16 @@ namespace Services.Versioned.Implementations
 
             var cardConnection = await _cardConnectionRepository.GetById(id);
 
+            if (cardConnection == null)
+            {
+                await TelegramAPI.Send($"CardConnection ({id}) not found");
+                throw new FunException($"CardConnection ({id}) not found");
+            }
+
             var card = await _cardRepository.GetById(cardConnection.CardLeftId, c => c.Desk);
 
-            // TODO: Support shared desks
-            if (card.Desk.AuthorAccountId != requestAccountId)
+            var desk = card.Desk;
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardConnectionServiceV2.Remove:\nAttempt to access restricted desk!\nDesk ({card.DeskId}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
@@ -88,13 +93,12 @@ namespace Services.Versioned.Implementations
 
             var desk = await _deskRepository.GetById(id);
 
-            // TODO: Support shared desks
-            if (desk.AuthorAccountId != requestAccountId)
+            if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"ICardConnectionServiceV2.GetAllByDesk:\nAttempt to access restricted desk!\nDesk ({id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
             }
-            
+
             var cardConnections = await _cardConnectionRepository.GetMany(c => c.CardLeft.DeskId == id);
 
             var cardConnectionWithIdDtos = _mapper.Map<ICollection<CardConnectionWithIdDto>>(cardConnections);

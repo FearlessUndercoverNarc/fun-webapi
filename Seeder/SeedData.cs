@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Infrastructure.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Models.DTOs.Cards;
 using Models.DTOs.Desks;
 using Models.DTOs.Folders;
 using Services.SharedServices.Abstractions;
@@ -16,6 +17,7 @@ namespace Seeder
         private readonly IFolderServiceV2 _folderService;
         private readonly IDeskServiceV2 _deskService;
         private readonly IDeskShareServiceV2 _deskShareService;
+        private readonly ICardServiceV1 _cardService;
         private readonly IRequestAccountIdSetterService _requestAccountIdSetterService;
         private readonly IServiceScope _serviceScope;
 
@@ -28,6 +30,7 @@ namespace Seeder
             _deskService = _serviceScope.ServiceProvider.GetRequiredService<IDeskServiceV2>();
             _deskShareService = _serviceScope.ServiceProvider.GetRequiredService<IDeskShareServiceV2>();
             _requestAccountIdSetterService = _serviceScope.ServiceProvider.GetRequiredService<IRequestAccountIdSetterService>();
+            _cardService = _serviceScope.ServiceProvider.GetRequiredService<ICardServiceV1>();
         }
 
         ~SeedData()
@@ -62,6 +65,23 @@ namespace Seeder
                 Title = "Test Desk",
                 Description = "There could be your ads."
             });
+
+            var gaygay = "GAYGAY";
+            var colors = new[] {"#e40303", "#ff8c00", "#ffed00", "#008026", "#004dff", "#750787"};
+            for (var i = 0; i < gaygay.Length; i++)
+            {
+                await _cardService.Create(new CreateCardDto()
+                {
+                    X = (uint)(4940 + 20 * i),
+                    Y = (uint)(4940 + 20 * i),
+                    ColorHex = colors[i],
+                    Title = "" + gaygay[i],
+                    Description = "" + gaygay[i],
+                    DeskId = deskId,
+                    Image = "",
+                    ExternalUrl = ""
+                });
+            }
 
             await _deskShareService.Share(deskId, adminId);
         }
