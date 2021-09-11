@@ -116,6 +116,10 @@ namespace Infrastructure.Core
                     opt1 => opt1.HasOne(c => c.CardLeft).WithMany(c => c.AsLeftCardConnections),
                     opt2 => opt2.HasOne(c => c.CardRight).WithMany(c => c.AsRightCardConnections),
                     rel => rel.HasKey(c => new {c.Id, c.CardLeftId, c.CardRightId}));
+            
+            modelBuilder.Entity<CardConnection>()
+                .Property(c => c.Id)
+                .ValueGeneratedOnAdd();
         }
 
         public DbSet<FunAccount> FunAccounts { get; set; }

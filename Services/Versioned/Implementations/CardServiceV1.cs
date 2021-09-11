@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using Infrastructure.Abstractions;
@@ -6,6 +7,7 @@ using Models.Db.Tree;
 using Models.DTOs.Cards;
 using Models.DTOs.Misc;
 using Models.Misc;
+using Newtonsoft.Json;
 using Services.External;
 using Services.SharedServices.Abstractions;
 using Services.Versioned.V1;
@@ -23,13 +25,16 @@ namespace Services.Versioned.Implementations
         private IMapper _mapper;
         private IDeskShareRepository _deskShareRepository;
 
-        public CardService(ICardRepository cardRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IDeskRepository deskRepository, IDeskShareRepository deskShareRepository)
+        private IDeskActionHistoryRepository _deskActionHistoryRepository;
+
+        public CardService(ICardRepository cardRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IDeskRepository deskRepository, IDeskShareRepository deskShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository)
         {
             _cardRepository = cardRepository;
             _mapper = mapper;
             _requestAccountIdService = requestAccountIdService;
             _deskRepository = deskRepository;
             _deskShareRepository = deskShareRepository;
+            _deskActionHistoryRepository = deskActionHistoryRepository;
         }
 
         async Task<CreatedDto> ICardServiceV1.Create(CreateCardDto createCardDto)
@@ -46,6 +51,21 @@ namespace Services.Versioned.Implementations
             var card = _mapper.Map<Card>(createCardDto);
 
             await _cardRepository.Add(card);
+
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.CreateCard,
+                OldData = "",
+                NewData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
             // TODO: Raise SSE event
 
@@ -69,9 +89,26 @@ namespace Services.Versioned.Implementations
                 throw new FunException("У вас нет доступа к изменению этой доски");
             }
 
+            var oldData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex});
+            
             _mapper.Map(updateCardDto, card);
 
             await _cardRepository.Update(card);
+
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.UpdateCard,
+                OldData = oldData,
+                NewData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
             // TODO: Raise SSE event
         }
@@ -156,8 +193,25 @@ namespace Services.Versioned.Implementations
                 await TelegramAPI.Send($"ICardServiceV1.GetById:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
             }
+
+            var oldData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex});
             
             await _cardRepository.Remove(card);
+
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.DeleteCard,
+                OldData = oldData,
+                NewData = ""
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
             // TODO: Raise SSE event
         }

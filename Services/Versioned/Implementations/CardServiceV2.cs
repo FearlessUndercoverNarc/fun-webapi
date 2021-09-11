@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Models.Db.Tree;
 using Models.DTOs.Cards;
 using Models.DTOs.Misc;
 using Models.Misc;
+using Newtonsoft.Json;
 using Services.External;
 using Services.Versioned.V2;
 
@@ -18,13 +20,28 @@ namespace Services.Versioned.Implementations
 
             if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
-                await TelegramAPI.Send($"ICardServiceV2.Create:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
+                await TelegramAPI.Send($"ICardServiceV1.Create:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к изменению этой доски");
             }
 
             var card = _mapper.Map<Card>(createCardDto);
 
             await _cardRepository.Add(card);
+
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.CreateCard,
+                OldData = "",
+                NewData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
             // TODO: Raise SSE event
 
@@ -44,13 +61,30 @@ namespace Services.Versioned.Implementations
 
             if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
-                await TelegramAPI.Send($"ICardServiceV2.Update:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
+                await TelegramAPI.Send($"ICardServiceV1.Update:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к изменению этой доски");
             }
 
+            var oldData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex});
+            
             _mapper.Map(updateCardDto, card);
 
             await _cardRepository.Update(card);
+
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.UpdateCard,
+                OldData = oldData,
+                NewData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
             // TODO: Raise SSE event
         }
@@ -132,11 +166,28 @@ namespace Services.Versioned.Implementations
 
             if (!(desk.AuthorAccountId == requestAccountId || await _deskShareRepository.IsSharedTo(desk.Id, requestAccountId)))
             {
-                await TelegramAPI.Send($"ICardServiceV2.GetById:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
+                await TelegramAPI.Send($"ICardServiceV1.GetById:\nAttempt to access restricted desk!\nDesk ({desk.Id}), Account({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой доске");
             }
+
+            var oldData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex});
             
             await _cardRepository.Remove(card);
+
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.DeleteCard,
+                OldData = oldData,
+                NewData = ""
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
             // TODO: Raise SSE event
         }

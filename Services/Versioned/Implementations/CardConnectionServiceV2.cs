@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Models.Db.Tree;
 using Models.DTOs.CardConnections;
 using Models.DTOs.Misc;
 using Models.Misc;
+using Newtonsoft.Json;
 using Services.External;
 using Services.Versioned.V2;
 
@@ -56,6 +58,21 @@ namespace Services.Versioned.Implementations
 
             await _cardConnectionRepository.Add(cardConnection);
 
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.Connect,
+                OldData = "",
+                NewData = JsonConvert.SerializeObject(new object[] {cardConnection.CardLeftId, cardConnection.CardRightId})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
+
             // TODO: Raise SSE event
 
             return cardConnection.Id;
@@ -83,6 +100,21 @@ namespace Services.Versioned.Implementations
             }
 
             await _cardConnectionRepository.Remove(cardConnection);
+
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.Disconnect,
+                OldData = "",
+                NewData = JsonConvert.SerializeObject(new object[] {cardConnection.CardLeftId, cardConnection.CardRightId})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
             // TODO: Raise SSE event
         }

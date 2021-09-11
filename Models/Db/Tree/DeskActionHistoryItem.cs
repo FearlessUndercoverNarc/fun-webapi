@@ -1,11 +1,21 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using Models.Db.Account;
 using Models.Db.Common;
 
 namespace Models.Db.Tree
 {
-    public class DeskActionHistoryItem : IdEntity
+    public enum ActionType
+    {
+        DeskInit,
+        DeskUpdate,
+        CreateCard,
+        Connect,
+        Disconnect,
+        DeleteCard,
+        UpdateCard
+    }
+
+    public class DeskActionHistoryItem : VersionedEntity
     {
         [ForeignKey(nameof(Desk))]
         public long DeskId { get; set; }
@@ -17,23 +27,10 @@ namespace Models.Db.Tree
 
         public virtual FunAccount FunAccount { get; set; }
 
-        public string Action { get; set; }
+        public ActionType Action { get; set; }
 
-        public DateTime DateTime { get; set; }
+        public string OldData { get; set; }
 
-        enum Actions
-        {
-            CreateCard,
-            Connect,
-            Disconnect,
-            DeleteCard,
-            UpdateCard
-        }
-        
-        // Create card with full info, including X and Y
-        // Connect from left (first) to right (second)
-        // Delete with connectionId
-        // Update card with all fields
-        // {"Action":"CreateCard", "Data": ["X", "Y", "TITLE"] }
+        public string NewData { get; set; }
     }
 }

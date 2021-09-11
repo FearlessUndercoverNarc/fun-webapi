@@ -17,8 +17,5 @@ namespace Models.DTOs.Desks
         [Required(AllowEmptyStrings = true)]
         [String(0, 512)]
         public string Description { get; set; }
-        
-        [Id(typeof(Folder))]
-        public long? ParentId { get; set; }
     }
 }

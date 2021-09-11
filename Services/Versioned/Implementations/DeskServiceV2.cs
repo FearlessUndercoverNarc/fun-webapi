@@ -36,6 +36,19 @@ namespace Services.Versioned.Implementations
 
             await _deskRepository.Add(desk);
 
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = 1,
+                Action = ActionType.DeskInit,
+                OldData = "",
+                NewData = ""
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
+
             return desk.Id;
         }
 
@@ -61,6 +74,19 @@ namespace Services.Versioned.Implementations
             desk.LastUpdatedAt = DateTime.Now;
 
             await _deskRepository.Update(desk);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = 1,
+                Action = ActionType.DeskUpdate,
+                OldData = "",
+                NewData = ""
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
         }
 
         async Task<DeskWithIdDto> IDeskServiceV2.GetById(long id)

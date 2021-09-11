@@ -7,6 +7,7 @@ using Models.Db.Tree;
 using Models.DTOs.Desks;
 using Models.DTOs.Misc;
 using Models.Misc;
+using Newtonsoft.Json;
 using Services.External;
 using Services.SharedServices.Abstractions;
 using Services.Versioned.V1;
@@ -21,8 +22,9 @@ namespace Services.Versioned.Implementations
         private IRequestAccountIdService _requestAccountIdService;
         private IDeskShareRepository _deskShareRepository;
         private IFolderShareRepository _folderShareRepository;
+        private IDeskActionHistoryRepository _deskActionHistoryRepository;
 
-        public DeskService(IDeskRepository deskRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IFolderRepository folderRepository, IDeskShareRepository deskShareRepository, IFolderShareRepository folderShareRepository)
+        public DeskService(IDeskRepository deskRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IFolderRepository folderRepository, IDeskShareRepository deskShareRepository, IFolderShareRepository folderShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository)
         {
             _deskRepository = deskRepository;
             _mapper = mapper;
@@ -30,6 +32,7 @@ namespace Services.Versioned.Implementations
             _folderRepository = folderRepository;
             _deskShareRepository = deskShareRepository;
             _folderShareRepository = folderShareRepository;
+            _deskActionHistoryRepository = deskActionHistoryRepository;
         }
 
         async Task<CreatedDto> IDeskServiceV1.Create(CreateDeskDto createDeskDto)
@@ -56,6 +59,19 @@ namespace Services.Versioned.Implementations
 
             await _deskRepository.Add(desk);
 
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = 1,
+                Action = ActionType.DeskInit,
+                OldData = "",
+                NewData = ""
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
+
             return desk.Id;
         }
 
@@ -81,6 +97,21 @@ namespace Services.Versioned.Implementations
             desk.LastUpdatedAt = DateTime.Now;
 
             await _deskRepository.Update(desk);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = 1,
+                Action = ActionType.DeskUpdate,
+                OldData = "",
+                NewData = ""
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
+            
+            // TODO: Raise SSE event
         }
 
         async Task<DeskWithIdDto> IDeskServiceV1.GetById(long id)
@@ -116,7 +147,7 @@ namespace Services.Versioned.Implementations
             }
 
             var desks = await _deskRepository.GetMany(
-                d => d.ParentId == folderId && d.AuthorAccountId == requestAccountId && !d.IsInTrashBin,
+                d => d.AuthorAccountId == requestAccountId && d.ParentId == folderId && !d.IsInTrashBin,
                 d => d.Parent,
                 d => d.AuthorAccount
             );
@@ -175,7 +206,7 @@ namespace Services.Versioned.Implementations
                 await TelegramAPI.Send($"IDeskServiceV1.MoveToFolder:\nAttempt to move element into restricted folder!\nDeskId ({deskId}) -> ({destinationId})\nUser ({requestAccountId})");
                 throw new FunException("Вы не можете перемещать в эту папку, так как не являетесь её владельцем");
             }
-            
+
             // we need to ensure that source and destination folders are from same account
             var sourceFolder = await _folderRepository.GetById(desk.ParentId);
             if (sourceFolder.AuthorAccountId != destinationFolder.AuthorAccountId)

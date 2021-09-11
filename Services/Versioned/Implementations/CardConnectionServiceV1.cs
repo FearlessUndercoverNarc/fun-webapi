@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using Infrastructure.Abstractions;
@@ -6,6 +7,7 @@ using Models.Db.Tree;
 using Models.DTOs.CardConnections;
 using Models.DTOs.Misc;
 using Models.Misc;
+using Newtonsoft.Json;
 using Services.External;
 using Services.SharedServices.Abstractions;
 using Services.Versioned.V1;
@@ -23,8 +25,9 @@ namespace Services.Versioned.Implementations
 
         private IMapper _mapper;
         private IDeskShareRepository _deskShareRepository;
+        private IDeskActionHistoryRepository _deskActionHistoryRepository;
 
-        public CardConnectionService(ICardConnectionRepository cardConnectionRepository, IMapper mapper, IDeskRepository deskRepository, IRequestAccountIdService requestAccountIdService, ICardRepository cardRepository, IDeskShareRepository deskShareRepository)
+        public CardConnectionService(ICardConnectionRepository cardConnectionRepository, IMapper mapper, IDeskRepository deskRepository, IRequestAccountIdService requestAccountIdService, ICardRepository cardRepository, IDeskShareRepository deskShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository)
         {
             _cardConnectionRepository = cardConnectionRepository;
             _mapper = mapper;
@@ -32,6 +35,7 @@ namespace Services.Versioned.Implementations
             _requestAccountIdService = requestAccountIdService;
             _cardRepository = cardRepository;
             _deskShareRepository = deskShareRepository;
+            _deskActionHistoryRepository = deskActionHistoryRepository;
         }
 
         async Task<CreatedDto> ICardConnectionServiceV1.Create(CreateCardConnectionDto createCardConnectionDto)
@@ -79,6 +83,21 @@ namespace Services.Versioned.Implementations
 
             await _cardConnectionRepository.Add(cardConnection);
 
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.Connect,
+                OldData = "",
+                NewData = JsonConvert.SerializeObject(new object[] {cardConnection.CardLeftId, cardConnection.CardRightId})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
+
             // TODO: Raise SSE event
 
             return cardConnection.Id;
@@ -106,6 +125,21 @@ namespace Services.Versioned.Implementations
             }
 
             await _cardConnectionRepository.Remove(cardConnection);
+
+            var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);
+
+            var deskActionHistoryItem = new DeskActionHistoryItem()
+            {
+                DeskId = desk.Id,
+                DateTime = DateTime.Now,
+                FunAccountId = requestAccountId,
+                Version = lastVersionByDesk + 1,
+                Action = ActionType.Disconnect,
+                OldData = "",
+                NewData = JsonConvert.SerializeObject(new object[] {cardConnection.CardLeftId, cardConnection.CardRightId})
+            };
+
+            await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
             // TODO: Raise SSE event
         }
