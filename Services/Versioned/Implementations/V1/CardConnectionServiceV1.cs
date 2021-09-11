@@ -26,8 +26,9 @@ namespace Services.Versioned.Implementations
         private IMapper _mapper;
         private IDeskShareRepository _deskShareRepository;
         private IDeskActionHistoryRepository _deskActionHistoryRepository;
+        private ISSEService _sseService;
 
-        public CardConnectionService(ICardConnectionRepository cardConnectionRepository, IMapper mapper, IDeskRepository deskRepository, IRequestAccountIdService requestAccountIdService, ICardRepository cardRepository, IDeskShareRepository deskShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository)
+        public CardConnectionService(ICardConnectionRepository cardConnectionRepository, IMapper mapper, IDeskRepository deskRepository, IRequestAccountIdService requestAccountIdService, ICardRepository cardRepository, IDeskShareRepository deskShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository, ISSEService sseService)
         {
             _cardConnectionRepository = cardConnectionRepository;
             _mapper = mapper;
@@ -36,6 +37,7 @@ namespace Services.Versioned.Implementations
             _cardRepository = cardRepository;
             _deskShareRepository = deskShareRepository;
             _deskActionHistoryRepository = deskActionHistoryRepository;
+            _sseService = sseService;
         }
 
         async Task<CreatedDto> ICardConnectionServiceV1.Create(CreateCardConnectionDto createCardConnectionDto)
@@ -97,8 +99,8 @@ namespace Services.Versioned.Implementations
             };
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
-
-            // TODO: Raise SSE event
+            
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
 
             return cardConnection.Id;
         }
@@ -141,7 +143,7 @@ namespace Services.Versioned.Implementations
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
-            // TODO: Raise SSE event
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
         }
 
         async Task<ICollection<CardConnectionWithIdDto>> ICardConnectionServiceV1.GetAllByDesk(long id)

@@ -73,7 +73,7 @@ namespace Services.Versioned.Implementations
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
-            // TODO: Raise SSE event
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
 
             return cardConnection.Id;
         }
@@ -116,7 +116,7 @@ namespace Services.Versioned.Implementations
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
-            // TODO: Raise SSE event
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
         }
 
         async Task<ICollection<CardConnectionWithIdDto>> ICardConnectionServiceV2.GetAllByDesk(long id)

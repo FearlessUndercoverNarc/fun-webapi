@@ -26,61 +26,10 @@ namespace FunAPI.Areas.V2.Controllers
     public class DeskController : Controller
     {
         private IDeskServiceV2 _deskService;
-        private readonly JsonSerializerSettings _jsonSettings;
-        private ISSEService _sseService;
 
         public DeskController(IDeskServiceV2 deskService, ISSEService sseService)
         {
             _deskService = deskService;
-            _sseService = sseService;
-            _jsonSettings = new JsonSerializerSettings {ContractResolver = new CamelCasePropertyNamesContractResolver()};
-        }
-        // Note: JS EventSource doesn't support custom headers, so disable AuthTokenFilter here 
-        [HttpGet]
-        [MapToApiVersion("1.0")]
-        //[TypeFilter(typeof(AuthTokenFilter))]
-        public void Sse(
-            [Required] [Id(typeof(Desk))] long id
-        )
-        {
-            Response.StatusCode = 200;
-            Response.Headers.Add("Content-Type", "text/event-stream");
-
-            async void OnDeskAction(long deskId, long eventId)
-            {
-                try
-                {
-                    var messageJson = JsonConvert.SerializeObject(new CreatedDto(id), _jsonSettings);
-
-                    await Response.WriteAsync($"data: {messageJson}\n");
-                    await Response.WriteAsync($"id: {id}\n\n"); // NOTE: we have 2 '\n' because of SSE format
-                    await Response.Body.FlushAsync();
-                }
-                catch (Exception e)
-                {
-                    await TelegramAPI.Send($"/v1/Desk/sse failed in OnDeskAction.\n{e.ToPrettyString()}");
-                }
-            }
-
-            _sseService.DeskActionOccured += OnDeskAction;
-
-            // _logger.LogInformation("SSE connected");
-
-            string lastEventIdString = Request.Headers["Last-Event-ID"];
-
-            if (int.TryParse(lastEventIdString, out var lastEventId))
-            {
-                for (var i = lastEventId; i < _sseService.LastDeskActionIdMap[id]; i++)
-                {
-                    OnDeskAction(id, i);
-                }
-            }
-
-            HttpContext.RequestAborted.WaitHandle.WaitOne();
-
-            _sseService.DeskActionOccured -= OnDeskAction;
-
-            // _logger.LogInformation("SSE disconnected");
         }
         
         [HttpPost]

@@ -26,8 +26,9 @@ namespace Services.Versioned.Implementations
         private IDeskShareRepository _deskShareRepository;
 
         private IDeskActionHistoryRepository _deskActionHistoryRepository;
+        private ISSEService _sseService;
 
-        public CardService(ICardRepository cardRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IDeskRepository deskRepository, IDeskShareRepository deskShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository)
+        public CardService(ICardRepository cardRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IDeskRepository deskRepository, IDeskShareRepository deskShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository, ISSEService sseService)
         {
             _cardRepository = cardRepository;
             _mapper = mapper;
@@ -35,6 +36,7 @@ namespace Services.Versioned.Implementations
             _deskRepository = deskRepository;
             _deskShareRepository = deskShareRepository;
             _deskActionHistoryRepository = deskActionHistoryRepository;
+            _sseService = sseService;
         }
 
         async Task<CreatedDto> ICardServiceV1.Create(CreateCardDto createCardDto)
@@ -67,7 +69,7 @@ namespace Services.Versioned.Implementations
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
-            // TODO: Raise SSE event
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
 
             return card.Id;
         }
@@ -110,7 +112,7 @@ namespace Services.Versioned.Implementations
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
-            // TODO: Raise SSE event
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
         }
 
         async Task<ICollection<CardWithIdDto>> ICardServiceV1.GetAllByDesk(long id)
@@ -213,7 +215,7 @@ namespace Services.Versioned.Implementations
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
-            // TODO: Raise SSE event
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
         }
     }
 }

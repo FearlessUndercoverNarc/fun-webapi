@@ -24,7 +24,9 @@ namespace Services.Versioned.Implementations
         private IFolderShareRepository _folderShareRepository;
         private IDeskActionHistoryRepository _deskActionHistoryRepository;
 
-        public DeskService(IDeskRepository deskRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IFolderRepository folderRepository, IDeskShareRepository deskShareRepository, IFolderShareRepository folderShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository)
+        private ISSEService _sseService;
+
+        public DeskService(IDeskRepository deskRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IFolderRepository folderRepository, IDeskShareRepository deskShareRepository, IFolderShareRepository folderShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository, ISSEService sseService)
         {
             _deskRepository = deskRepository;
             _mapper = mapper;
@@ -33,6 +35,7 @@ namespace Services.Versioned.Implementations
             _deskShareRepository = deskShareRepository;
             _folderShareRepository = folderShareRepository;
             _deskActionHistoryRepository = deskActionHistoryRepository;
+            _sseService = sseService;
         }
 
         async Task<CreatedDto> IDeskServiceV1.Create(CreateDeskDto createDeskDto)
@@ -110,7 +113,7 @@ namespace Services.Versioned.Implementations
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
 
-            // TODO: Raise SSE event
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
         }
 
         async Task<DeskWithIdDto> IDeskServiceV1.GetById(long id)

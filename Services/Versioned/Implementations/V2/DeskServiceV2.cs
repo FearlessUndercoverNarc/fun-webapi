@@ -20,7 +20,6 @@ namespace Services.Versioned.Implementations
                 var parentFolder = await _folderRepository.GetById(parentId);
                 // parentFolder can't be null, it's ID is checked in DTO
 
-                // TODO: Support separate read/write accesses
                 if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedWriteTo(parentFolder.Id, requestAccountId)))
                 {
                     await TelegramAPI.Send($"IDeskServiceV1.Create:\nAttempt to create desk in restricted location!\nFolderId ({parentId})\nUser ({requestAccountId})");
@@ -87,6 +86,8 @@ namespace Services.Versioned.Implementations
             };
 
             await _deskActionHistoryRepository.Add(deskActionHistoryItem);
+
+            _sseService.EmitDeskActionOccured(desk.Id, deskActionHistoryItem.Id);
         }
 
         async Task<DeskWithIdDto> IDeskServiceV2.GetById(long id)
