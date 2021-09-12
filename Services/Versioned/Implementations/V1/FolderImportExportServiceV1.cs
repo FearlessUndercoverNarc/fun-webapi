@@ -13,7 +13,7 @@ using Services.Versioned.V1;
 
 namespace Services.Versioned.Implementations
 {
-    public class FolderImportExportService : IFolderImportExportServiceV1
+    public partial class FolderImportExportService : IFolderImportExportServiceV1
     {
         private IFolderRepository _folderRepository;
         private IDeskRepository _deskRepository;
@@ -181,7 +181,6 @@ namespace Services.Versioned.Implementations
         {
             // TODO: Verify parentId folder belongs to same account
 
-            // TODO: Prepend file with it's type (folder or desk)
             var jsonModel = Encoding.UTF8.GetString(data);
             var folderModel = JsonConvert.DeserializeObject<FolderModel>(jsonModel);
 
