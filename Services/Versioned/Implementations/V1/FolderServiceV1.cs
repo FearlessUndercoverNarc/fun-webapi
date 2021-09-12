@@ -119,7 +119,7 @@ namespace Services.Versioned.Implementations
 
             var requestAccountId = _requestAccountIdService.Id;
 
-            if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedWriteTo(parentFolder.Id, requestAccountId)))
+            if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedReadTo(parentFolder.Id, requestAccountId)))
             {
                 await TelegramAPI.Send($"IFolderServiceV1.GetSubfoldersByFolder:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({requestAccountId})");
                 throw new FunException("У вас нет доступа к этой папке");
