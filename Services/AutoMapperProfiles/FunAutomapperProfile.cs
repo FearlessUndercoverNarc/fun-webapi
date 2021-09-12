@@ -9,6 +9,7 @@ using Models.DTOs.Desks;
 using Models.DTOs.Folders;
 using Models.DTOs.FunAccounts;
 using Models.DTOs.Relations;
+using Models.ImportExport;
 
 namespace Services.AutoMapperProfiles
 {
@@ -71,6 +72,20 @@ namespace Services.AutoMapperProfiles
                 .ReverseMap();
 
             CreateMap<DeskActionHistoryItem, DeskActionDto>()
+                .ReverseMap();
+
+
+            CreateMap<Folder, FolderModel>()
+                .ForMember(m => m.Desks, cfg => cfg.Ignore())
+                .ForMember(m => m.Children, cfg => cfg.Ignore())
+                .ReverseMap()
+                .ForMember(f => f.Desks, cfg => cfg.Ignore())
+                .ForMember(m => m.Children, cfg => cfg.Ignore());
+            CreateMap<Desk, DeskModel>()
+                .ForMember(m => m.Cards, cfg => cfg.Ignore())
+                .ReverseMap()
+                .ForMember(d => d.Cards, cfg => cfg.Ignore());
+            CreateMap<Card, CardModel>()
                 .ReverseMap();
         }
     }

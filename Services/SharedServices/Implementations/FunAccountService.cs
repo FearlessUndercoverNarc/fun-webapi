@@ -52,5 +52,15 @@ namespace Services.SharedServices.Implementations
 
             return funAccountWithIdDtos;
         }
+
+        public async Task<FunAccountWithIdDto> GetMy()
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+            var funAccount = await _funAccountRepository.GetById(requestAccountId);
+
+            var funAccountWithIdDto = _mapper.Map<FunAccountWithIdDto>(funAccount);
+
+            return funAccountWithIdDto;
+        }
     }
 }
