@@ -72,6 +72,7 @@ namespace FunAPI.Areas.Shared.Controllers
         }
 
         [HttpPost]
+        [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult> Update([FromBody] UpdateFunAccountDto updateFunAccountDto)
         {
             await _funAccountService.UpdateFunAccount(updateFunAccountDto);
@@ -97,6 +98,15 @@ namespace FunAPI.Areas.Shared.Controllers
             var funAccountWithIdDtos = await _funAccountService.GetAll();
 
             return Ok(funAccountWithIdDtos);
+        }
+        
+        [HttpGet]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<FunAccountWithIdDto>> GetMy()
+        {
+            var funAccountWithIdDto = await _funAccountService.GetMy();
+
+            return Ok(funAccountWithIdDto);
         }
     }
 }

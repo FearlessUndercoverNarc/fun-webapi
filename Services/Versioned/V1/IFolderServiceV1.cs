@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Models.DTOs.Folders;
 using Models.DTOs.Misc;
+using Models.ImportExport;
 
 namespace Services.Versioned.V1
 {

@@ -169,7 +169,7 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Cards");
                 });
 
-            modelBuilder.Entity("Models.Db.Tree.CardConnection", b =>
+            modelBuilder.Entity("Models.Db.Tree.CardConnections", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -387,7 +387,7 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Desk");
                 });
 
-            modelBuilder.Entity("Models.Db.Tree.CardConnection", b =>
+            modelBuilder.Entity("Models.Db.Tree.CardConnections", b =>
                 {
                     b.HasOne("Models.Db.Tree.Card", "CardLeft")
                         .WithMany("AsLeftCardConnections")

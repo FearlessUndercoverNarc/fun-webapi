@@ -86,8 +86,8 @@ namespace Services.Versioned.Implementations
 
             if (cardConnection == null)
             {
-                await TelegramAPI.Send($"CardConnection ({id}) not found");
-                throw new FunException($"CardConnection ({id}) not found");
+                await TelegramAPI.Send($"CardConnections ({id}) not found");
+                throw new FunException($"CardConnections ({id}) not found");
             }
 
             var card = await _cardRepository.GetById(cardConnection.CardLeftId, c => c.Desk);

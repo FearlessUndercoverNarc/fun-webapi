@@ -21,12 +21,13 @@ namespace Services.Versioned.Implementations
         private IMapper _mapper;
         private IRequestAccountIdService _requestAccountIdService;
         private IDeskShareRepository _deskShareRepository;
+        private IFolderShareServiceV1 _folderShareService;
         private IFolderShareRepository _folderShareRepository;
         private IDeskActionHistoryRepository _deskActionHistoryRepository;
 
         private ISSEService _sseService;
 
-        public DeskService(IDeskRepository deskRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IFolderRepository folderRepository, IDeskShareRepository deskShareRepository, IFolderShareRepository folderShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository, ISSEService sseService)
+        public DeskService(IDeskRepository deskRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IFolderRepository folderRepository, IDeskShareRepository deskShareRepository, IFolderShareRepository folderShareRepository, IDeskActionHistoryRepository deskActionHistoryRepository, ISSEService sseService, IFolderShareServiceV1 folderShareService)
         {
             _deskRepository = deskRepository;
             _mapper = mapper;
@@ -36,30 +37,33 @@ namespace Services.Versioned.Implementations
             _folderShareRepository = folderShareRepository;
             _deskActionHistoryRepository = deskActionHistoryRepository;
             _sseService = sseService;
+            _folderShareService = folderShareService;
         }
 
         async Task<CreatedDto> IDeskServiceV1.Create(CreateDeskDto createDeskDto)
         {
             var requestAccountId = _requestAccountIdService.Id;
-            if (createDeskDto.ParentId is { } parentId)
-            {
-                var parentFolder = await _folderRepository.GetById(parentId);
-                // parentFolder can't be null, it's ID is checked in DTO
 
-                if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedWriteTo(parentFolder.Id, requestAccountId)))
-                {
-                    await TelegramAPI.Send($"IDeskServiceV1.Create:\nAttempt to create desk in restricted location!\nFolderId ({parentId})\nUser ({requestAccountId})");
-                    throw new FunException("Вы не можете создавать здесь что-либо, так как у вас нет доступа");
-                }
+            var parentFolder = await _folderRepository.GetById(createDeskDto.ParentId, f => f.SharedToRelation);
+
+            if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedWriteTo(parentFolder.Id, requestAccountId)))
+            {
+                await TelegramAPI.Send($"IDeskServiceV1.Create:\nAttempt to create desk in restricted location!\nFolderId ({createDeskDto.ParentId})\nUser ({requestAccountId})");
+                throw new FunException("Вы не можете создавать здесь что-либо, так как у вас нет доступа");
             }
 
             var desk = _mapper.Map<Desk>(createDeskDto);
 
             desk.CreatedAt = DateTime.Now;
             desk.LastUpdatedAt = DateTime.Now;
-            desk.AuthorAccountId = requestAccountId;
+            desk.AuthorAccountId = parentFolder.AuthorAccountId;
 
             await _deskRepository.Add(desk);
+
+            foreach (var folderShare in parentFolder.SharedToRelation)
+            {
+                await _folderShareService.Share(parentFolder.Id, folderShare.FunAccountId, folderShare.HasWriteAccess);
+            }
 
             var deskActionHistoryItem = new DeskActionHistoryItem()
             {

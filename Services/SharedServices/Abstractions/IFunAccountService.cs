@@ -12,5 +12,7 @@ namespace Services.SharedServices.Abstractions
         Task UpdateFunAccount(UpdateFunAccountDto updateFunAccountDto);
 
         Task<ICollection<FunAccountWithIdDto>> GetAll();
+        
+        Task<FunAccountWithIdDto> GetMy();
     }
 }
