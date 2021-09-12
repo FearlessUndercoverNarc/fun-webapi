@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -109,9 +111,24 @@ namespace Services.Versioned.Implementations
 
             var bytes = Encoding.UTF8.GetBytes(jsonModel);
 
-            // TODO: Sign RSA and encode
+            var aeskey = Encoding.UTF8.GetBytes("i am as cool as my ass");
+            
+            //Объявляем объект класса AES
+            Aes aes = Aes.Create();
+            //Генерируем соль
+            aes.GenerateIV();
+            //Присваиваем ключ. aeskey - переменная (массив байт), сгенерированная методом GenerateKey() класса AES
+            aes.Key = aeskey;
 
-            return (bytes, folder.Title);
+
+            await using MemoryStream srcStream = new(bytes);
+            var crypt = aes.CreateEncryptor(aes.Key, aes.IV);
+            await using var destStream = new MemoryStream();
+            await using var cryptoStream = new CryptoStream(srcStream, crypt, CryptoStreamMode.Write);
+            await cryptoStream.CopyToAsync(destStream);
+            var encrypted = destStream.ToArray();
+
+            return (encrypted, folder.Title);
         }
 
         private async Task<Folder> UnwrapModelRecursive(FolderModel model, long? parentId)
@@ -181,7 +198,32 @@ namespace Services.Versioned.Implementations
         {
             // TODO: Verify parentId folder belongs to same account
 
-            var jsonModel = Encoding.UTF8.GetString(data);
+            byte[] bytesIv = new byte[16];
+            byte[] mess = new byte[data.Length - 16];
+            //Списываем соль
+            for (int i = data.Length - 16, j = 0; i < data.Length; i++, j++)
+                bytesIv[j] = data[i];
+            //Списываем оставшуюся часть сообщения
+            for (int i = 0; i < data.Length - 16; i++)
+                mess[i] = data[i];
+            
+            var aeskey = Encoding.UTF8.GetBytes("egop is super cool");
+            
+            //Объект класса Aes
+            Aes aes = Aes.Create();
+            //Задаем тот же ключ, что и для шифрования
+            aes.Key = aeskey;
+            //Задаем соль
+            aes.IV = bytesIv;
+            //Строковая переменная для результата
+            ICryptoTransform crypt = aes.CreateDecryptor(aes.Key, aes.IV);
+            await using MemoryStream srcStream = new MemoryStream(mess);
+            await using CryptoStream cryptoStream = new CryptoStream(srcStream, crypt, CryptoStreamMode.Read);
+            await cryptoStream.CopyToAsync(srcStream);
+
+            byte[] decrypted = srcStream.ToArray();
+
+            var jsonModel = Encoding.UTF8.GetString(decrypted);
             var folderModel = JsonConvert.DeserializeObject<FolderModel>(jsonModel);
 
             var folder = await UnwrapModelRecursive(folderModel, parentId);
