@@ -14,5 +14,7 @@ namespace Services.SharedServices.Abstractions
         Task<ICollection<FunAccountWithIdDto>> GetAll();
         
         Task<FunAccountWithIdDto> GetMy();
+
+        Task<IsActiveDto> ToggleSubscription();
     }
 }

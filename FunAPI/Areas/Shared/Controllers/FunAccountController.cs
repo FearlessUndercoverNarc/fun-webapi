@@ -108,5 +108,14 @@ namespace FunAPI.Areas.Shared.Controllers
 
             return Ok(funAccountWithIdDto);
         }
+
+        [HttpGet]
+        [TypeFilter(typeof(AuthTokenFilter))]
+        public async Task<ActionResult<IsActiveDto>> ToggleSubscription()
+        {
+            var isActiveDto = await _funAccountService.ToggleSubscription();
+
+            return Ok(isActiveDto);
+        }
     }
 }

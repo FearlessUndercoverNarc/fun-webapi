@@ -47,6 +47,13 @@ namespace Services.Versioned.Implementations
                     throw new FunException("Вы не можете создавать здесь что-либо, так как не являетесь владельцем");
                 }
             }
+            
+            var count = await _folderRepository.Count(d => d.AuthorAccountId == requestAccountId);
+
+            if (count >= 10)
+            {
+                throw new FunException("Вы не можете создавать больше 10 папок на любых уровнях. Оформите подписку, чтобы увеличить лимит");
+            }
 
             var folder = _mapper.Map<Folder>(createFolderDto);
 

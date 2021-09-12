@@ -62,5 +62,15 @@ namespace Services.SharedServices.Implementations
 
             return funAccountWithIdDto;
         }
+
+        public async Task<IsActiveDto> ToggleSubscription()
+        {
+            var requestAccountId = _requestAccountIdService.Id;
+            var funAccount = await _funAccountRepository.GetById(requestAccountId);
+            funAccount.HasSubscription = !funAccount.HasSubscription;
+
+            await _funAccountRepository.Update(funAccount);
+            return funAccount.HasSubscription;
+        }
     }
 }
