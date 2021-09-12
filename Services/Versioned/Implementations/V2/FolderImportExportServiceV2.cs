@@ -2,7 +2,9 @@
 using System.Threading.Tasks;
 using Models.DTOs.Misc;
 using Models.ImportExport;
+using Models.Misc;
 using Newtonsoft.Json;
+using Services.External;
 using Services.Versioned.V2;
 
 namespace Services.Versioned.Implementations
@@ -11,7 +13,15 @@ namespace Services.Versioned.Implementations
     {
         async Task<(byte[] encodedData, string title)> IFolderImportExportServiceV2.Export(long id)
         {
+            var requestAccountId = _requestAccountIdService.Id;
+
             var folder = await _folderRepository.GetById(id);
+            
+            if (!(folder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedReadTo(folder.Id, requestAccountId)))
+            {
+                await TelegramAPI.Send($"IFolderImportExportServiceV2.Export:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({requestAccountId})");
+                throw new FunException("У вас нет доступа к этой папке");
+            }
 
             var folderModel = await CollectModelRecursive(id, new IntHolder());
 
@@ -20,18 +30,26 @@ namespace Services.Versioned.Implementations
                 ReferenceLoopHandling = ReferenceLoopHandling.Error
             });
 
-            var bytes = Encoding.UTF8.GetBytes(jsonModel);
+            var encrypted = ToAes256(jsonModel); 
 
-            // TODO: Sign RSA and encode
-
-            return (bytes, folder.Title);
+            return (encrypted, folder.Title);
         }
 
-        async Task<CreatedDto> IFolderImportExportServiceV2.Import(byte[] data, long? parentId)
+        async Task<CreatedDto> IFolderImportExportServiceV2.Import(byte[] encryptedData, long? parentId)
         {
-            // TODO: Verify parentId folder belongs to same account
+            var requestAccountId = _requestAccountIdService.Id;
 
-            var jsonModel = Encoding.UTF8.GetString(data);
+            if (parentId is not null)
+            {
+                var parentFolder = await _folderRepository.GetById(parentId.Value);
+                if (parentFolder.AuthorAccountId != requestAccountId)
+                {
+                    await TelegramAPI.Send($"IFolderImportExportServiceV1.Import:\nAttempt to access restricted folder!\nFolder ({parentFolder.Id}), Account({requestAccountId})");
+                    throw new FunException("У вас нет доступа для импорта в эту папку");
+                }
+            }
+            
+            var jsonModel = FromAes256(encryptedData);
             var folderModel = JsonConvert.DeserializeObject<FolderModel>(jsonModel);
 
             var folder = await UnwrapModelRecursive(folderModel, parentId);

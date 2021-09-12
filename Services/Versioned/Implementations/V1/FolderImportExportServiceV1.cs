@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,7 +10,9 @@ using Infrastructure.Abstractions;
 using Models.Db.Tree;
 using Models.DTOs.Misc;
 using Models.ImportExport;
+using Models.Misc;
 using Newtonsoft.Json;
+using Services.External;
 using Services.SharedServices.Abstractions;
 using Services.Versioned.V1;
 
@@ -17,6 +20,7 @@ namespace Services.Versioned.Implementations
 {
     public partial class FolderImportExportService : IFolderImportExportServiceV1
     {
+        private static readonly byte[] AesKey = Encoding.UTF8.GetBytes("Mr Egop is as awesome as his ass");
         private IFolderRepository _folderRepository;
         private IDeskRepository _deskRepository;
         private ICardRepository _cardRepository;
@@ -24,8 +28,9 @@ namespace Services.Versioned.Implementations
         private IRequestAccountIdService _requestAccountIdService;
 
         private IMapper _mapper;
+        private IFolderShareRepository _folderShareRepository;
 
-        public FolderImportExportService(IFolderRepository folderRepository, IMapper mapper, IDeskRepository deskRepository, IRequestAccountIdService requestAccountIdService, ICardRepository cardRepository, ICardConnectionRepository cardConnectionRepository)
+        public FolderImportExportService(IFolderRepository folderRepository, IMapper mapper, IDeskRepository deskRepository, IRequestAccountIdService requestAccountIdService, ICardRepository cardRepository, ICardConnectionRepository cardConnectionRepository, IFolderShareRepository folderShareRepository)
         {
             _folderRepository = folderRepository;
             _mapper = mapper;
@@ -33,6 +38,7 @@ namespace Services.Versioned.Implementations
             _requestAccountIdService = requestAccountIdService;
             _cardRepository = cardRepository;
             _cardConnectionRepository = cardConnectionRepository;
+            _folderShareRepository = folderShareRepository;
         }
 
         class IntHolder
@@ -100,7 +106,15 @@ namespace Services.Versioned.Implementations
 
         async Task<(byte[] encodedData, string title)> IFolderImportExportServiceV1.Export(long id)
         {
+            var requestAccountId = _requestAccountIdService.Id;
+
             var folder = await _folderRepository.GetById(id);
+            
+            if (!(folder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedReadTo(folder.Id, requestAccountId)))
+            {
+                await TelegramAPI.Send($"IFolderImportExportServiceV1.Export:\nAttempt to access restricted folder!\nFolderId ({id})\nUser ({requestAccountId})");
+                throw new FunException("У вас нет доступа к этой папке");
+            }
 
             var folderModel = await CollectModelRecursive(id, new IntHolder());
 
@@ -109,24 +123,7 @@ namespace Services.Versioned.Implementations
                 ReferenceLoopHandling = ReferenceLoopHandling.Error
             });
 
-            var bytes = Encoding.UTF8.GetBytes(jsonModel);
-
-            var aeskey = Encoding.UTF8.GetBytes("i am as cool as my ass");
-            
-            //Объявляем объект класса AES
-            Aes aes = Aes.Create();
-            //Генерируем соль
-            aes.GenerateIV();
-            //Присваиваем ключ. aeskey - переменная (массив байт), сгенерированная методом GenerateKey() класса AES
-            aes.Key = aeskey;
-
-
-            await using MemoryStream srcStream = new(bytes);
-            var crypt = aes.CreateEncryptor(aes.Key, aes.IV);
-            await using var destStream = new MemoryStream();
-            await using var cryptoStream = new CryptoStream(srcStream, crypt, CryptoStreamMode.Write);
-            await cryptoStream.CopyToAsync(destStream);
-            var encrypted = destStream.ToArray();
+            var encrypted = ToAes256(jsonModel); 
 
             return (encrypted, folder.Title);
         }
@@ -193,37 +190,92 @@ namespace Services.Versioned.Implementations
 
             return folder;
         }
-
-        async Task<CreatedDto> IFolderImportExportServiceV1.Import(byte[] data, long? parentId)
+        
+        /// <summary>
+        /// Шифрует исходное сообщение AES ключом (добавляет соль)
+        /// </summary>
+        /// <param name="src"></param>
+        /// <returns></returns>
+        public static byte[] ToAes256(string src)
         {
-            // TODO: Verify parentId folder belongs to same account
-
+            //Объявляем объект класса AES
+            Aes aes = Aes.Create();
+            //Генерируем соль
+            aes.GenerateIV();
+            //Присваиваем ключ. aeskey - переменная (массив байт), сгенерированная методом GenerateKey() класса AES
+            aes.Key = AesKey;
+            byte[] encrypted;
+            ICryptoTransform crypt = aes.CreateEncryptor(aes.Key, aes.IV);
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (CryptoStream cs = new CryptoStream(ms, crypt, CryptoStreamMode.Write))
+                {
+                    using (StreamWriter sw = new StreamWriter(cs))
+                    {
+                        sw.Write(src);
+                    }
+                }
+                //Записываем в переменную encrypted зашиврованный поток байтов
+                encrypted = ms.ToArray();
+            }
+            //Возвращаем поток байт + крепим соль
+            return encrypted.Concat(aes.IV).ToArray();
+        }
+        
+        /// <summary>
+        /// Расшифровывает криптованного сообщения
+        /// </summary>
+        /// <param name="shifr">Шифротекст в байтах</param>
+        /// <returns>Возвращает исходную строку</returns>
+        public static string FromAes256(byte[] shifr)
+        {
             byte[] bytesIv = new byte[16];
-            byte[] mess = new byte[data.Length - 16];
+            byte[] mess = new byte[shifr.Length - 16];
             //Списываем соль
-            for (int i = data.Length - 16, j = 0; i < data.Length; i++, j++)
-                bytesIv[j] = data[i];
+            for (int i = shifr.Length - 16, j = 0; i < shifr.Length; i++, j++)
+                bytesIv[j] = shifr[i];
             //Списываем оставшуюся часть сообщения
-            for (int i = 0; i < data.Length - 16; i++)
-                mess[i] = data[i];
-            
-            var aeskey = Encoding.UTF8.GetBytes("egop is super cool");
-            
+            for (int i = 0; i < shifr.Length - 16; i++)
+                mess[i] = shifr[i];
             //Объект класса Aes
             Aes aes = Aes.Create();
             //Задаем тот же ключ, что и для шифрования
-            aes.Key = aeskey;
+            aes.Key = AesKey;
             //Задаем соль
             aes.IV = bytesIv;
             //Строковая переменная для результата
+            string text = "";
+            byte[] data = mess;
             ICryptoTransform crypt = aes.CreateDecryptor(aes.Key, aes.IV);
-            await using MemoryStream srcStream = new MemoryStream(mess);
-            await using CryptoStream cryptoStream = new CryptoStream(srcStream, crypt, CryptoStreamMode.Read);
-            await cryptoStream.CopyToAsync(srcStream);
+            using (MemoryStream ms = new MemoryStream(data))
+            {
+                using (CryptoStream cs = new CryptoStream(ms, crypt, CryptoStreamMode.Read))
+                {
+                    using (StreamReader sr = new StreamReader(cs))
+                    {
+                        //Результат записываем в переменную text в вие исходной строки
+                        text = sr.ReadToEnd();
+                    }
+                }
+            }
+            return text;
+        }
+        
+        async Task<CreatedDto> IFolderImportExportServiceV1.Import(byte[] encryptedData, long? parentId)
+        {
+            var requestAccountId = _requestAccountIdService.Id;
 
-            byte[] decrypted = srcStream.ToArray();
-
-            var jsonModel = Encoding.UTF8.GetString(decrypted);
+            if (parentId is not null)
+            {
+                var parentFolder = await _folderRepository.GetById(parentId.Value);
+                if (parentFolder.AuthorAccountId != requestAccountId)
+                {
+                    await TelegramAPI.Send($"IFolderImportExportServiceV1.Import:\nAttempt to access restricted folder!\nFolder ({parentFolder.Id}), Account({requestAccountId})");
+                    throw new FunException("У вас нет доступа для импорта в эту папку");
+                }
+            }
+            
+            var jsonModel = FromAes256(encryptedData);
             var folderModel = JsonConvert.DeserializeObject<FolderModel>(jsonModel);
 
             var folder = await UnwrapModelRecursive(folderModel, parentId);

@@ -32,7 +32,7 @@ namespace FunAPI.Areas.V1.Controllers
 
         [HttpGet]
         [MapToApiVersion("1.0")]
-        [TypeFilter(typeof(AuthTokenFilter))]
+        // [TypeFilter(typeof(AuthTokenFilter))]
         public async Task<ActionResult> Export(
             [Required] [Id(typeof(Folder))] long id
         )
