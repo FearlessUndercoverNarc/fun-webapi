@@ -17,10 +17,11 @@ namespace Services.Versioned.Implementations
         {
             var requestAccountId = _requestAccountIdService.Id;
 
+            Folder parentFolder = null;
+
             if (createFolderDto.ParentId is { } parentId)
             {
-                var parentFolder = await _folderRepository.GetById(parentId);
-                // parentFolder can't be null, it's ID is checked in DTO
+                parentFolder = await _folderRepository.GetById(parentId, f => f.SharedToRelation);
 
                 if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedWriteTo(parentFolder.Id, requestAccountId)))
                 {
@@ -31,11 +32,19 @@ namespace Services.Versioned.Implementations
 
             var folder = _mapper.Map<Folder>(createFolderDto);
 
-            folder.AuthorAccountId = requestAccountId;
             folder.CreatedAt = DateTime.Now;
             folder.LastUpdatedAt = DateTime.Now;
+            folder.AuthorAccountId = createFolderDto.ParentId ?? requestAccountId;
 
             await _folderRepository.Add(folder);
+
+            if (parentFolder is not null)
+            {
+                foreach (var folderShare in parentFolder.SharedToRelation)
+                {
+                    await _folderShareService.Share(folder.Id, folderShare.FunAccountId, folderShare.HasWriteAccess);
+                }
+            }
 
             return folder.Id;
         }

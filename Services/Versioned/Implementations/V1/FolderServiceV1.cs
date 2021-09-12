@@ -19,26 +19,27 @@ namespace Services.Versioned.Implementations
         private IRequestAccountIdService _requestAccountIdService;
         private IFolderShareRepository _folderShareRepository;
         private IFolderRepository _folderRepository;
+        private IFolderShareServiceV1 _folderShareService;
         private IDeskRepository _deskRepository;
         private IMapper _mapper;
 
-        public FolderService(IFolderRepository folderRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IDeskRepository deskRepository, IFolderShareRepository folderShareRepository)
+        public FolderService(IFolderRepository folderRepository, IMapper mapper, IRequestAccountIdService requestAccountIdService, IDeskRepository deskRepository, IFolderShareRepository folderShareRepository, IFolderShareServiceV1 folderShareService)
         {
             _folderRepository = folderRepository;
             _mapper = mapper;
             _requestAccountIdService = requestAccountIdService;
             _deskRepository = deskRepository;
             _folderShareRepository = folderShareRepository;
+            _folderShareService = folderShareService;
         }
 
         async Task<CreatedDto> IFolderServiceV1.Create(CreateFolderDto createFolderDto)
         {
             var requestAccountId = _requestAccountIdService.Id;
-
+            Folder parentFolder = null;
             if (createFolderDto.ParentId is { } parentId)
             {
-                var parentFolder = await _folderRepository.GetById(parentId);
-                // parentFolder can't be null, it's ID is checked in DTO
+                parentFolder = await _folderRepository.GetById(parentId, f => f.SharedToRelation);
 
                 if (!(parentFolder.AuthorAccountId == requestAccountId || await _folderShareRepository.HasSharedWriteTo(parentFolder.Id, requestAccountId)))
                 {
@@ -49,11 +50,19 @@ namespace Services.Versioned.Implementations
 
             var folder = _mapper.Map<Folder>(createFolderDto);
 
-            folder.AuthorAccountId = requestAccountId;
             folder.CreatedAt = DateTime.Now;
             folder.LastUpdatedAt = DateTime.Now;
+            folder.AuthorAccountId = createFolderDto.ParentId ?? requestAccountId;
 
             await _folderRepository.Add(folder);
+
+            if (parentFolder is not null)
+            {
+                foreach (var folderShare in parentFolder.SharedToRelation)
+                {
+                    await _folderShareService.Share(folder.Id, folderShare.FunAccountId, folderShare.HasWriteAccess);
+                }
+            }
 
             return folder.Id;
         }
