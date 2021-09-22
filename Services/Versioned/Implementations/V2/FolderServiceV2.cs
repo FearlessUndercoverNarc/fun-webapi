@@ -34,7 +34,7 @@ namespace Services.Versioned.Implementations
 
             folder.CreatedAt = DateTime.Now;
             folder.LastUpdatedAt = DateTime.Now;
-            folder.AuthorAccountId = createFolderDto.ParentId ?? requestAccountId;
+            folder.AuthorAccountId = parentFolder?.AuthorAccountId ?? requestAccountId;
 
             await _folderRepository.Add(folder);
 

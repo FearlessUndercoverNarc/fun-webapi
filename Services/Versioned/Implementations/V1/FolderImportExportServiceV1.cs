@@ -123,7 +123,7 @@ namespace Services.Versioned.Implementations
                 ReferenceLoopHandling = ReferenceLoopHandling.Error
             });
 
-            var encrypted = ToAes256(jsonModel); 
+            var encrypted = Encoding.UTF8.GetBytes(jsonModel); //ToAes256(jsonModel); 
 
             return (encrypted, folder.Title);
         }
@@ -274,8 +274,8 @@ namespace Services.Versioned.Implementations
                     throw new FunException("У вас нет доступа для импорта в эту папку");
                 }
             }
-            
-            var jsonModel = FromAes256(encryptedData);
+
+            var jsonModel = Encoding.UTF8.GetString(encryptedData); // FromAes256(encryptedData);
             var folderModel = JsonConvert.DeserializeObject<FolderModel>(jsonModel);
 
             var folder = await UnwrapModelRecursive(folderModel, parentId);

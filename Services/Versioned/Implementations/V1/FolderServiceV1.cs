@@ -59,7 +59,7 @@ namespace Services.Versioned.Implementations
 
             folder.CreatedAt = DateTime.Now;
             folder.LastUpdatedAt = DateTime.Now;
-            folder.AuthorAccountId = createFolderDto.ParentId ?? requestAccountId;
+            folder.AuthorAccountId = parentFolder?.AuthorAccountId ?? requestAccountId;
 
             await _folderRepository.Add(folder);
 
@@ -129,8 +129,7 @@ namespace Services.Versioned.Implementations
         async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetSubfoldersByFolder(long id)
         {
             var parentFolder = await _folderRepository.GetById(
-                id,
-                f => f.Desks.Where(d => !d.IsInTrashBin)
+                id
             );
 
             var requestAccountId = _requestAccountIdService.Id;

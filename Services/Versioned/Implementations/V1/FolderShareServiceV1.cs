@@ -33,6 +33,7 @@ namespace Services.Versioned.Implementations
 
         private async Task AggregateUnshared(long id, long recipientId, List<long> folders, List<long> desks)
         {
+            var requestAccountId = _requestAccountIdService.Id;
             var folder = await _folderRepository.GetById(
                 id,
                 f => f.Children,
@@ -80,7 +81,7 @@ namespace Services.Versioned.Implementations
 
             foreach (var desk in folder.Desks)
             {
-                if (await _deskShareRepository.HasSharedReadTo(desk.Id, recipientId))
+                if (!await _deskShareRepository.HasSharedReadTo(desk.Id, recipientId))
                 {
                     desks.Add(desk.Id);
                 }
@@ -109,7 +110,7 @@ namespace Services.Versioned.Implementations
             {
                 folderShares.Add(new FolderShare()
                 {
-                    FolderId = folder, 
+                    FolderId = folder,
                     FunAccountId = recipientId,
                     HasWriteAccess = hasWriteAccess
                 });
@@ -119,7 +120,7 @@ namespace Services.Versioned.Implementations
             {
                 deskShares.Add(new DeskShare()
                 {
-                    DeskId = desk, 
+                    DeskId = desk,
                     FunAccountId = recipientId,
                     HasWriteAccess = hasWriteAccess
                 });
