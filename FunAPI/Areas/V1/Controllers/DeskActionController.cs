@@ -47,6 +47,10 @@ namespace FunAPI.Areas.V1.Controllers
 
             async void OnDeskAction(long deskId, long eventId)
             {
+                if (deskId != id)
+                {
+                    return;
+                }
                 try
                 {
                     var messageJson = JsonConvert.SerializeObject(new CreatedDto(eventId), _jsonSettings);
@@ -57,7 +61,7 @@ namespace FunAPI.Areas.V1.Controllers
                 }
                 catch (Exception e)
                 {
-                    await TelegramAPI.Send($"/v1/Desk/sse failed in OnDeskAction.\n{e.ToPrettyString()}");
+                    await TelegramAPI.Send($"/v1/DeskAction/sse failed in OnDeskAction.\n{e.ToPrettyString()}");
                 }
             }
 

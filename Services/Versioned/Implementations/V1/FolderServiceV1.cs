@@ -47,12 +47,19 @@ namespace Services.Versioned.Implementations
                     throw new FunException("Вы не можете создавать здесь что-либо, так как не являетесь владельцем");
                 }
             }
+            
+            var count = await _folderRepository.Count(d => d.AuthorAccountId == requestAccountId);
+
+            if (count >= 10)
+            {
+                throw new FunException("Вы не можете создавать больше 10 папок на любых уровнях. Оформите подписку, чтобы увеличить лимит");
+            }
 
             var folder = _mapper.Map<Folder>(createFolderDto);
 
             folder.CreatedAt = DateTime.Now;
             folder.LastUpdatedAt = DateTime.Now;
-            folder.AuthorAccountId = createFolderDto.ParentId ?? requestAccountId;
+            folder.AuthorAccountId = parentFolder?.AuthorAccountId ?? requestAccountId;
 
             await _folderRepository.Add(folder);
 
@@ -122,8 +129,7 @@ namespace Services.Versioned.Implementations
         async Task<ICollection<FolderWithIdDto>> IFolderServiceV1.GetSubfoldersByFolder(long id)
         {
             var parentFolder = await _folderRepository.GetById(
-                id,
-                f => f.Desks.Where(d => !d.IsInTrashBin)
+                id
             );
 
             var requestAccountId = _requestAccountIdService.Id;

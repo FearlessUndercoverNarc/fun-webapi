@@ -52,6 +52,13 @@ namespace Services.Versioned.Implementations
                 throw new FunException("Вы не можете создавать здесь что-либо, так как у вас нет доступа");
             }
 
+            var count = await _deskRepository.Count(d => d.AuthorAccountId == requestAccountId);
+
+            if (count >= 10)
+            {
+                throw new FunException("Вы не можете создавать больше 3 досок. Оформите подписку, чтобы увеличить лимит");
+            }
+
             var desk = _mapper.Map<Desk>(createDeskDto);
 
             desk.CreatedAt = DateTime.Now;
@@ -155,7 +162,7 @@ namespace Services.Versioned.Implementations
             }
 
             var desks = await _deskRepository.GetMany(
-                d => d.AuthorAccountId == requestAccountId && d.ParentId == folderId && !d.IsInTrashBin,
+                d => d.ParentId == folderId && !d.IsInTrashBin,
                 d => d.Parent,
                 d => d.AuthorAccount
             );

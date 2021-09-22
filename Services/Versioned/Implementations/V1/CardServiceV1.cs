@@ -50,6 +50,13 @@ namespace Services.Versioned.Implementations
                 throw new FunException("У вас нет доступа к изменению этой доски");
             }
 
+            var count = await _cardRepository.Count(c => c.DeskId == desk.Id);
+
+            if (count >= 30)
+            {
+                throw new FunException("Вы не можете создавать более 30 карточек на одной доске. Оформите подписку, чтобы увеличить лимит.");
+            }
+
             var card = _mapper.Map<Card>(createCardDto);
 
             await _cardRepository.Add(card);
@@ -92,7 +99,7 @@ namespace Services.Versioned.Implementations
             }
 
             var oldData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex});
-            
+
             _mapper.Map(updateCardDto, card);
 
             await _cardRepository.Update(card);
@@ -197,7 +204,7 @@ namespace Services.Versioned.Implementations
             }
 
             var oldData = JsonConvert.SerializeObject(new object[] {card.Id, card.X, card.Y, card.Title, card.Image, card.Description, card.ExternalUrl, card.ColorHex});
-            
+
             await _cardRepository.Remove(card);
 
             var lastVersionByDesk = await _deskActionHistoryRepository.GetLastVersionByDesk(desk.Id);

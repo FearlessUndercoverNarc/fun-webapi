@@ -28,7 +28,7 @@ namespace Services.Versioned
             services.AddScoped<IDeskActionServiceV1, DeskActionService>();
             services.AddScoped<IDeskActionServiceV2, DeskActionService>();
             services.AddScoped<IFolderImportExportServiceV1, FolderImportExportService>();
-            // services.AddScoped<IFolderExportServiceV2, FolderImportExportService>();
+            services.AddScoped<IFolderImportExportServiceV2, FolderImportExportService>();
             return services;
         }
     }

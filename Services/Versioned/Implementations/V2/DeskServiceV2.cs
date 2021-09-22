@@ -125,7 +125,7 @@ namespace Services.Versioned.Implementations
             }
 
             var desks = await _deskRepository.GetMany(
-                d => d.ParentId == folderId && d.AuthorAccountId == requestAccountId && !d.IsInTrashBin,
+                d => d.ParentId == folderId && !d.IsInTrashBin,
                 d => d.Parent,
                 d => d.AuthorAccount
             );
